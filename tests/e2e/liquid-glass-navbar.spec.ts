@@ -139,6 +139,18 @@ test('navbar preserves route-aware navigation and keyboard mobile controls', asy
   await page.keyboard.press('Enter');
   await expect(toggle).toHaveAttribute('aria-expanded', 'true');
   await expect(nav.getByRole('link', { name: 'J-Teen', exact: true })).toBeVisible();
+  const menuSurface = await page.locator('#global-nav').evaluate((element) => {
+    const style = getComputedStyle(element);
+    return {
+      backgroundImage: style.backgroundImage,
+      backdropFilter: style.backdropFilter,
+    };
+  });
+  expect(menuSurface.backgroundImage).toContain('linear-gradient');
+  expect(menuSurface.backdropFilter).not.toBe('none');
+  expect((await page.locator('#global-nav').boundingBox())?.width).toBeGreaterThanOrEqual(
+    370,
+  );
   await page.keyboard.press('Escape');
   await expect(toggle).toHaveAttribute('aria-expanded', 'false');
 

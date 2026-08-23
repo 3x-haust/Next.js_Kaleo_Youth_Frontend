@@ -66,13 +66,21 @@ export const Nav = styled.nav<{ $open?: boolean }>`
     top: 72px;
     right: 0;
     left: 0;
+    width: auto;
+    justify-self: stretch;
     flex-direction: column;
     align-items: stretch;
     gap: 0;
     display: none;
     padding: var(--ky-sp-2) 0 var(--ky-sp-3);
-    background-color: var(--glass-fill-scrolled);
-    background-image: none;
+    background-color: rgba(1, 11, 32, 0.94);
+    background-image:
+      linear-gradient(
+        180deg,
+        rgba(8, 25, 59, 0.96) 0%,
+        rgba(2, 14, 39, 0.97) 58%,
+        rgba(0, 7, 24, 0.98) 100%
+      );
     backdrop-filter: blur(var(--glass-blur-scrolled)) saturate(var(--glass-saturation-scrolled)) brightness(0.9);
     -webkit-backdrop-filter: blur(var(--glass-blur-scrolled)) saturate(var(--glass-saturation-scrolled)) brightness(0.9);
     border-bottom: 1px solid var(--glass-line);
