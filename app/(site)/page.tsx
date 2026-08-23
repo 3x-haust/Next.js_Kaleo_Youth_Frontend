@@ -38,6 +38,8 @@ import {
   HeroUnderGlow,
   InteractiveMap,
   Message,
+  MessageEmpty,
+  MessageEmptyCopy,
   Page,
   SectionIntro,
   SectionTitle,
@@ -133,39 +135,51 @@ export default async function HomePage() {
         </AboutCopy>
       </About>
 
-      <Message aria-labelledby="message-title">
+      <Message aria-labelledby="message-title" data-zone="home-message-section">
         <SectionIntro>
           <Eyebrow>MESSAGE</Eyebrow>
           <SectionTitle id="message-title">하나님의<br />말씀을 듣습니다</SectionTitle>
           <p>하나님의 말씀을 듣고, 삶으로 살아내는 우리입니다.</p>
         </SectionIntro>
-        <Feature delay={120}>
-          {featured?.youtubeVideoId ? (
-            <FeatureFrame>
-              <YouTubeFacade
-                authoredPoster={Boolean(featured.posterUrl ?? featured.thumbnailUrl)}
-                posterSrc={toFileUrl(featured.posterUrl ?? featured.thumbnailUrl) || undefined}
-                videoId={featured.youtubeVideoId}
-                title="KALEO YOUTH 예배 영상"
-              />
-            </FeatureFrame>
-          ) : null}
-          <FeatureMeta>
-            <FeatureText>
-              <FeatureHeading>
-                <DateLine>
-                  {featured ? `${formatHomeDate(featured.publishedAt)} · SUNDAY WORSHIP` : '새 말씀을 준비하고 있습니다'}
-                </DateLine>
-                <h3>{featured?.title ?? '말씀을 기다려 주세요.'}</h3>
-              </FeatureHeading>
-              <FeatureDetail data-zone="home-message-detail">
-                <p>{featured?.bibleReference ?? ''}</p>
-                <p>{featured?.preacherName ?? ''}</p>
-              </FeatureDetail>
-            </FeatureText>
-            <Button href={featured ? `/sermons/${featured.id}` : '/sermons'}>더 많은 영상 보기 <ButtonArrow src="/images/icons/arrow-right.svg" alt="" width={24} height={24} /></Button>
-          </FeatureMeta>
-        </Feature>
+        {featured ? (
+          <Feature delay={120}>
+            {featured.youtubeVideoId ? (
+              <FeatureFrame>
+                <YouTubeFacade
+                  authoredPoster={Boolean(featured.posterUrl ?? featured.thumbnailUrl)}
+                  posterSrc={toFileUrl(featured.posterUrl ?? featured.thumbnailUrl) || undefined}
+                  videoId={featured.youtubeVideoId}
+                  title="KALEO YOUTH 예배 영상"
+                />
+              </FeatureFrame>
+            ) : null}
+            <FeatureMeta>
+              <FeatureText>
+                <FeatureHeading>
+                  <DateLine>
+                    {formatHomeDate(featured.publishedAt)} · SUNDAY WORSHIP
+                  </DateLine>
+                  <h3>{featured.title}</h3>
+                </FeatureHeading>
+                <FeatureDetail data-zone="home-message-detail">
+                  <p>{featured.bibleReference ?? ''}</p>
+                  <p>{featured.preacherName}</p>
+                </FeatureDetail>
+              </FeatureText>
+              <Button href={`/sermons/${featured.id}`}>더 많은 영상 보기 <ButtonArrow src="/images/icons/arrow-right.svg" alt="" width={24} height={24} /></Button>
+            </FeatureMeta>
+          </Feature>
+        ) : (
+          <MessageEmpty delay={120} data-zone="home-message-empty">
+            <span>MESSAGE ARCHIVE</span>
+            <MessageEmptyCopy>
+              <p>이번 주의 말씀은 준비 중입니다</p>
+              <h3>다음 말씀을 기다리고 있어요</h3>
+              <p>지난 말씀을 다시 만나보세요.<br />예배의 은혜를 일상에서도 이어갈 수 있습니다.</p>
+            </MessageEmptyCopy>
+            <Button href="/sermons">지난 말씀 둘러보기 <ButtonArrow src="/images/icons/arrow-right.svg" alt="" width={24} height={24} /></Button>
+          </MessageEmpty>
+        )}
       </Message>
 
       <Worship aria-labelledby="worship-title">

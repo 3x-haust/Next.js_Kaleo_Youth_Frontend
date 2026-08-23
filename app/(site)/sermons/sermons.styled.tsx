@@ -95,7 +95,7 @@ export const Hero = styled.header`
 
 export const Top = styled.div`
   display: flex;
-  align-items: flex-start;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--ky-sp-6);
 
@@ -237,9 +237,8 @@ export const Grid = styled.section`
 export const Search = styled.form`
   display: flex;
   align-items: end;
-  gap: var(--ky-sp-2);
   width: min(35rem, 42vw);
-  margin-top: var(--ky-sp-1);
+  border-bottom: 1px solid rgba(247, 249, 252, 0.55);
 
   label {
     position: absolute;
@@ -252,17 +251,16 @@ export const Search = styled.form`
   input {
     flex: 1;
     min-width: 0;
-    border-bottom: 1px solid rgba(247, 249, 252, 0.55);
-    padding: var(--ky-sp-1) 0;
+    min-height: 44px;
+    padding: 12px 4px;
   }
 
   button {
-    padding: var(--ky-sp-1) var(--ky-sp-2);
-    border: 1px solid rgba(247, 249, 252, 0.55);
     min-height: 44px;
+    padding: 12px 4px 12px 20px;
   }
 
-  @media (max-width: 639px) {
+  @media (max-width: 767px) {
     align-items: stretch;
     width: 100%;
   }

@@ -108,12 +108,13 @@ export const Header = styled.header`
 
 export const Search = styled.form`
   display: flex;
-  width: min(420px, 100%);
+  width: min(35rem, 42vw);
   border-bottom: 1px solid rgba(247, 249, 252, 0.55);
 
   input {
     min-width: 0;
     flex: 1;
+    min-height: 44px;
     padding: 12px 4px;
     color: #f7f9fc;
     font-size: var(--ky-table);
@@ -128,9 +129,14 @@ export const Search = styled.form`
   }
 
   button {
+    min-height: 44px;
     padding: 12px 4px 12px 20px;
     color: #f7f9fc;
     font-size: var(--ky-table);
+  }
+
+  @media (max-width: 1023px) {
+    width: 100%;
   }
 `;
 

@@ -750,6 +750,141 @@ export const Feature = styled(Reveal)`
   }
 `;
 
+export const MessageEmptyCopy = styled.div`
+  position: relative;
+  z-index: 1;
+  display: flex;
+  max-width: 640px;
+  flex-direction: column;
+  gap: 14px;
+
+  > p:first-child {
+    color: var(--home-accent);
+    font-size: clamp(14px, 1vw, 18px);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+
+  h3 {
+    max-width: 11em;
+    font-size: clamp(34px, 3vw, 58px);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.035em;
+    text-wrap: balance;
+  }
+
+  > p:last-child {
+    color: rgba(247, 249, 252, 0.7);
+    font-size: clamp(16px, 1.15vw, 21px);
+    line-height: 1.65;
+  }
+`;
+
+export const MessageEmpty = styled(Reveal)`
+  position: relative;
+  min-height: 480px;
+  display: flex;
+  overflow: hidden;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 40px;
+  padding: clamp(32px, 4vw, 64px);
+  border: 1px solid rgba(96, 165, 250, 0.34);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(22, 119, 255, 0.28), transparent 38%),
+    linear-gradient(145deg, rgba(8, 19, 45, 0.96), rgba(2, 8, 22, 0.88));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  &::before {
+    position: absolute;
+    right: -0.05em;
+    bottom: -0.22em;
+    content: 'MESSAGE';
+    color: transparent;
+    font-size: clamp(74px, 9vw, 150px);
+    font-weight: 900;
+    letter-spacing: -0.07em;
+    line-height: 1;
+    -webkit-text-stroke: 1px rgba(96, 165, 250, 0.16);
+    pointer-events: none;
+  }
+
+  &::after {
+    position: absolute;
+    top: 0;
+    left: clamp(32px, 4vw, 64px);
+    width: min(220px, 30%);
+    height: 3px;
+    content: '';
+    background: linear-gradient(90deg, var(--home-accent), rgba(22, 119, 255, 0));
+  }
+
+  > span {
+    position: relative;
+    z-index: 1;
+    color: rgba(247, 249, 252, 0.56);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+  }
+
+  ${Button} {
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (min-width: 1024px) {
+    position: absolute;
+    left: calc(820px * var(--home-scale));
+    top: calc(135px * var(--home-scale));
+    width: calc(1000px * var(--home-scale));
+    height: calc(803px * var(--home-scale));
+    min-height: calc(803px * var(--home-scale));
+    padding: calc(64px * var(--home-scale));
+    border-radius: calc(16px * var(--home-scale));
+
+    ${MessageEmptyCopy} {
+      gap: calc(14px * var(--home-scale));
+
+      > p:first-child {
+        font-size: calc(18px * var(--home-scale));
+      }
+
+      h3 {
+        font-size: calc(58px * var(--home-scale));
+      }
+
+      > p:last-child {
+        font-size: calc(21px * var(--home-scale));
+      }
+    }
+
+    ${Button} {
+      min-height: calc(66px * var(--home-scale));
+      padding-inline: calc(30px * var(--home-scale));
+      border-radius: calc(10px * var(--home-scale));
+      font-size: calc(24px * var(--home-scale));
+    }
+  }
+
+  @media (max-width: 639px) {
+    min-height: 420px;
+    gap: 32px;
+    padding: 32px 24px;
+
+    &::after {
+      left: 24px;
+    }
+
+    ${MessageEmptyCopy} h3 {
+      font-size: 34px;
+    }
+  }
+`;
+
 export const Message = styled(Section)`
   min-height: 1073px;
   display: grid;

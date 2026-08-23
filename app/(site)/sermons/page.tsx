@@ -30,7 +30,7 @@ export default async function SermonsPage({ searchParams }: Props) {
   return (
     <Page>
       <Top>
-        <Hero>
+        <Hero data-zone="archive-heading">
           <Eyebrow>MESSAGE</Eyebrow>
           <h1>하나님의<br />말씀을 듣습니다</h1>
         </Hero>
