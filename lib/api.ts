@@ -2,7 +2,8 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 
-const BASE_URL = process.env.API_INTERNAL_URL ?? 'http://localhost:4000/api';
+const BASE_URL =
+  process.env.API_INTERNAL_URL ?? 'https://api.kaleoyouth.com/api';
 
 export class ApiError extends Error {
   constructor(

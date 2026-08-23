@@ -93,27 +93,15 @@ export const Hero = styled.header`
   }
 `;
 
-export const HeroMeta = styled.p`
-  margin-top: var(--ky-sp-4);
-  color: #f0f0ee;
-  font-size: var(--ky-table);
+export const Top = styled.div`
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--ky-sp-6);
 
-  @media (min-width: 1024px) {
-    width: calc(338px * var(--sermon-frame-scale));
-    height: calc(26px * var(--sermon-frame-scale));
-    margin-top: calc(40px * var(--sermon-frame-scale));
-    color: #f7f9fc;
-    font-size: calc(22px * var(--sermon-frame-scale));
-    font-weight: 400;
-    line-height: calc(26px * var(--sermon-frame-scale));
-    border-left: 3px solid var(--accent);
-    padding-left: calc(20px * var(--sermon-frame-scale));
-
-    > span {
-      display: block;
-      width: calc(315px * var(--sermon-frame-scale));
-      height: calc(26px * var(--sermon-frame-scale));
-    }
+  @media (max-width: 767px) {
+    flex-direction: column;
+    gap: var(--ky-sp-4);
   }
 `;
 
@@ -250,8 +238,8 @@ export const Search = styled.form`
   display: flex;
   align-items: end;
   gap: var(--ky-sp-2);
-  max-width: 42rem;
-  margin-top: var(--ky-sp-6);
+  width: min(35rem, 42vw);
+  margin-top: var(--ky-sp-1);
 
   label {
     position: absolute;
@@ -276,6 +264,7 @@ export const Search = styled.form`
 
   @media (max-width: 639px) {
     align-items: stretch;
+    width: 100%;
   }
 `;
 
@@ -301,19 +290,41 @@ export const CurrentPage = styled(Link)`
 `;
 
 export const Empty = styled.div`
+  display: flex;
+  min-height: 24rem;
   margin-top: var(--ky-sp-6);
-  color: rgba(247, 249, 252, 0.7);
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  border-top: 1px solid rgba(247, 249, 252, 0.16);
+  color: rgba(247, 249, 252, 0.66);
 
-  p + p {
-    margin-top: var(--ky-sp-2);
+  strong {
+    color: #f7f9fc;
+    font-size: clamp(1.5rem, 2.2vw, 2.25rem);
+    font-weight: 500;
   }
 
   a {
+    margin-top: var(--ky-sp-2);
     color: #fff;
     text-decoration: underline;
     min-height: 44px;
     display: inline-flex;
     align-items: center;
+  }
+`;
+
+export const InfiniteStatus = styled.div`
+  display: grid;
+  min-height: 7rem;
+  place-items: center;
+  color: rgba(247, 249, 252, 0.64);
+
+  button {
+    min-height: 44px;
+    padding: var(--ky-sp-1) var(--ky-sp-2);
+    border: 1px solid rgba(247, 249, 252, 0.45);
   }
 `;
 

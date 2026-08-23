@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
-const apiOrigin = process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:4000';
+const apiOrigin =
+  process.env.NEXT_PUBLIC_API_ORIGIN ?? 'https://api.kaleoyouth.com';
 const { protocol, hostname, port } = new URL(apiOrigin);
 
 const nextConfig: NextConfig = {

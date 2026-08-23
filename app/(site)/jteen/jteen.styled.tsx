@@ -10,6 +10,59 @@ const frame = (px: number) => {
   return `clamp(${format(at1024)}px, ${format(vw)}vw, ${format(px)}px)`;
 };
 
+export const EmptyPage = styled.main`
+  min-height: 100vh;
+  padding: clamp(9rem, 12vw, 14.375rem) var(--ky-gutter) 8rem;
+  color: var(--ky-ink);
+  background:
+    radial-gradient(circle at 82% 22%, rgba(22, 119, 255, 0.18), transparent 32%),
+    var(--ky-listing-field);
+  border-bottom: 3px solid transparent;
+  border-image: var(--ky-listing-edge) 1;
+`;
+
+export const EmptyEyebrow = styled.p`
+  color: var(--ky-blue);
+  font-size: clamp(1rem, 1.45vw, 1.75rem);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+`;
+
+export const EmptyTitle = styled.h1`
+  margin-top: 1rem;
+  font-size: clamp(2.75rem, 4.2vw, 5rem);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.035em;
+`;
+
+export const EmptyState = styled.div`
+  display: flex;
+  min-height: 30rem;
+  align-items: center;
+  gap: 1.25rem;
+  border-top: 1px solid rgba(247, 249, 252, 0.16);
+  margin-top: clamp(4rem, 8vw, 8rem);
+  color: rgba(247, 249, 252, 0.74);
+
+  span {
+    width: 3rem;
+    height: 3px;
+    background: var(--ky-blue);
+  }
+
+  strong {
+    color: #f7f9fc;
+    font-size: clamp(1.5rem, 2.2vw, 2.25rem);
+    font-weight: 500;
+  }
+
+  @media (max-width: 639px) {
+    min-height: 20rem;
+    margin-top: 4rem;
+  }
+`;
+
 export const Setlists = styled.section`
   position: relative;
   min-height: 620px;

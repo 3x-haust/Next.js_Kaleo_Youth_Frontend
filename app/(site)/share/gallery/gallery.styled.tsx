@@ -310,3 +310,16 @@ export const Empty = styled.div`
     text-decoration: underline;
   }
 `;
+
+export const InfiniteStatus = styled.div`
+  display: grid;
+  min-height: 7rem;
+  place-items: center;
+  color: rgba(247, 249, 252, 0.64);
+
+  button {
+    min-height: 44px;
+    padding: 10px 18px;
+    border: 1px solid rgba(247, 249, 252, 0.45);
+  }
+`;

@@ -1,7 +1,13 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { apiGetSafe } from '@/lib/api';
 import type { Setlist } from '@/lib/types';
+import {
+  EmptyEyebrow,
+  EmptyPage,
+  EmptyState,
+  EmptyTitle,
+} from './jteen.styled';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +24,20 @@ export default async function JteenPage() {
     right.serviceDate.localeCompare(left.serviceDate) || left.id.localeCompare(right.id),
   );
 
-  if (!latest) notFound();
+  if (!latest) {
+    return (
+      <EmptyPage>
+        <header>
+          <EmptyEyebrow>J-TEEN WORSHIP</EmptyEyebrow>
+          <EmptyTitle>함께 찬양합니다</EmptyTitle>
+        </header>
+        <EmptyState>
+          <span aria-hidden="true" />
+          <strong>올라온 콘티가 없습니다.</strong>
+        </EmptyState>
+      </EmptyPage>
+    );
+  }
+
   redirect(`/jteen/setlists/${latest.id}`);
 }
