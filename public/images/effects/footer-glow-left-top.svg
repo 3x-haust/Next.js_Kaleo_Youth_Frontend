@@ -1,0 +1,16 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="619.524" height="670.823" viewBox="0 0 619.524 670.823" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Rectangle " filter="url(#filter0_f_271_297)">
+<path d="M135.124 309.762C135.124 213.312 213.312 135.124 309.762 135.124C406.212 135.124 484.401 213.312 484.401 309.762V361.061C484.401 457.512 406.212 535.7 309.762 535.7C213.312 535.7 135.124 457.512 135.124 361.061V309.762Z" fill="url(#paint0_radial_271_297)" fill-opacity="0.3"/>
+</g>
+<defs>
+<filter id="filter0_f_271_297" x="0" y="0" width="619.524" height="670.824" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+<feGaussianBlur stdDeviation="67.5618" result="effect1_foregroundBlur_271_297"/>
+</filter>
+<radialGradient id="paint0_radial_271_297" cx="0" cy="0" r="1" gradientTransform="matrix(165.211 88.0236 -76.7509 190.267 292.276 373.535)" gradientUnits="userSpaceOnUse">
+<stop stop-color="#00E2E2"/>
+<stop offset="1" stop-color="#2C32FE" stop-opacity="0.31"/>
+</radialGradient>
+</defs>
+</svg>
