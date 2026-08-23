@@ -24,6 +24,7 @@ import {
   Page,
   Pagination,
   PinIcon,
+  Top,
 } from './events.styled';
 
 export const metadata: Metadata = { title: '일정', description: '수도교회 청소년부의 다가오는 일정입니다.' };
@@ -68,13 +69,20 @@ export default async function EventsPage({ searchParams }: Props) {
   const hero = { eyebrow: 'UPCOMING', title: '다가오는 일정', copy: 'Kaleo가 함께할 다음 일정을 확인하세요.' };
   return (
     <Page data-authored-frame={authoredFrame ? 'true' : undefined}>
-      <Hero>
-        <Eyebrow>{hero.eyebrow}</Eyebrow>
-        <h1>{hero.title}</h1>
-        <p>
-          <span>{hero.copy}</span>
-        </p>
-      </Hero>
+      <Top>
+        <Hero data-zone="archive-heading">
+          <Eyebrow>{hero.eyebrow}</Eyebrow>
+          <h1>{hero.title}</h1>
+          <p>
+            <span>{hero.copy}</span>
+          </p>
+        </Hero>
+        <Filters action="/events" method="get" role="search">
+          <label htmlFor="event-keyword">일정 검색</label>
+          <input id="event-keyword" name="keyword" defaultValue={keyword} placeholder="일정 이름·장소 검색" />
+          <button type="submit">검색</button>
+        </Filters>
+      </Top>
 
       {visibleEvents.length > 0 && <Count data-visual-extra>일정 {result.total || visibleEvents.length}개</Count>}
       {visibleEvents.length > 0 ? <>
@@ -117,11 +125,6 @@ export default async function EventsPage({ searchParams }: Props) {
           })}
         </Pagination>}
       </> : keyword ? <Empty><p>조건에 맞는 일정이 없습니다.</p><Link href="/events">예정된 일정 전체 보기</Link></Empty> : <Empty><p>예정된 일정이 없습니다.</p></Empty>}
-      <Filters action="/events" method="get" data-visual-extra>
-        <label htmlFor="event-keyword">일정 검색</label>
-        <input id="event-keyword" name="keyword" defaultValue={keyword} placeholder="일정 이름·장소 검색" />
-        <button type="submit">검색</button>
-      </Filters>
       <PageUnderGlowClip>
         <PageUnderGlow aria-hidden="true" data-zone="page-under-glow" />
       </PageUnderGlowClip>

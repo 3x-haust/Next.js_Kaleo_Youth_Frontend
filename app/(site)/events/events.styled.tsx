@@ -233,6 +233,18 @@ export const Hero = styled.header`
   }
 `;
 
+export const Top = styled.div`
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--ky-sp-6);
+
+  @media (max-width: 767px) {
+    flex-direction: column;
+    gap: var(--ky-sp-4);
+  }
+`;
+
 export const Count = styled.p`
   margin-top: var(--ky-sp-5);
   color: rgba(247, 249, 252, 0.65);
@@ -410,10 +422,9 @@ export const EventFacts = styled.span`
 
 export const Filters = styled.form`
   display: flex;
-  gap: var(--ky-sp-2);
   align-items: end;
-  max-width: 52rem;
-  margin-top: var(--ky-sp-6);
+  width: min(35rem, 42vw);
+  border-bottom: 1px solid rgba(247, 249, 252, 0.55);
 
   label {
     position: absolute;
@@ -426,24 +437,18 @@ export const Filters = styled.form`
   input {
     flex: 1;
     min-width: 0;
-    border-bottom: 1px solid rgba(247, 249, 252, 0.55);
-    padding: var(--ky-sp-1) 0;
     min-height: 44px;
+    padding: 12px 4px;
   }
 
-  select,
   button {
-    padding: var(--ky-sp-1) var(--ky-sp-2);
-    border: 1px solid rgba(247, 249, 252, 0.55);
     min-height: 44px;
+    padding: 12px 4px 12px 20px;
   }
 
-  @media (max-width: 639px) {
-    flex-wrap: wrap;
-
-    input {
-      flex-basis: 100%;
-    }
+  @media (max-width: 767px) {
+    align-items: stretch;
+    width: 100%;
   }
 `;
 

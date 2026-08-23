@@ -41,7 +41,7 @@ export default async function GalleryPage({ searchParams }: Props) {
   return (
     <Page>
       <Header>
-        <div>
+        <div data-zone="archive-heading">
           <Eyebrow>GALLERY</Eyebrow>
           <Title>
             우리의 이야기를
