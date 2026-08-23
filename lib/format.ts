@@ -82,7 +82,8 @@ export function toFileUrl(fileUrl: string | null | undefined): string {
   if (!fileUrl) return '';
   if (/^https?:\/\//i.test(fileUrl)) return fileUrl;
   if (fileUrl.startsWith('/images/')) return fileUrl;
-  const origin = process.env.NEXT_PUBLIC_API_ORIGIN ?? 'http://localhost:4000';
+  const origin =
+    process.env.NEXT_PUBLIC_API_ORIGIN ?? 'https://api.kaleoyouth.com';
   return `${origin}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
 }
 

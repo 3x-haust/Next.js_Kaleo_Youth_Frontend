@@ -32,6 +32,13 @@ export function Header() {
   useMotionValueEvent(scrollY, 'change', (value) => setScrolled(value > 24));
 
   useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setScrolled(window.scrollY > 24);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
     if (!open) return;
 
     const closeOnEscape = (event: KeyboardEvent) => {
