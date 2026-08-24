@@ -75,25 +75,25 @@ test('multi-photo upload exposes aggregate and file progress', async ({
   const started = new Promise<void>((resolve) => {
     requestStarted = resolve;
   });
-  let uploadIndex = 0;
-
   await page.route(`${apiOrigin}/api/uploads`, async (route) => {
-    uploadIndex += 1;
-    const current = uploadIndex;
+    const body = route.request().postDataBuffer();
+    const names = [
+      ...(body?.toString('latin1').matchAll(/filename="([^"]+)"/g) ?? []),
+    ].map((match) => match[1]);
     requestStarted();
     await release;
     await route.fulfill({
       status: 201,
       headers: responseHeaders(),
-      body: JSON.stringify([
-        {
-          id: `progress-result-${current}`,
-          fileUrl: `/uploads/progress-${current}.webp`,
-          originalName: `progress-${current}.png`,
+      body: JSON.stringify(
+        names.map((name, index) => ({
+          id: `progress-result-${index}`,
+          fileUrl: `/uploads/progress-${index}.webp`,
+          originalName: name,
           fileType: 'image/webp',
           fileSize: '1024',
-        },
-      ]),
+        })),
+      ),
     });
   });
 
@@ -127,67 +127,106 @@ test('multi-photo upload exposes aggregate and file progress', async ({
   }
 });
 
-test('multi-photo upload uses three bounded parallel requests', async ({
+test('large multi-photo upload uses one optimized batch request', async ({
   page,
 }) => {
   await page.goto('/admin/gallery/new');
 
-  let active = 0;
-  let maximumActive = 0;
+  const selected = await imageFiles();
   let requestCount = 0;
+  let requestBytes = 0;
+  const uploadedNames: string[] = [];
+
+  await page.route(`${apiOrigin}/api/uploads`, async (route) => {
+    requestCount += 1;
+    const body = route.request().postDataBuffer();
+    requestBytes += body?.length ?? 0;
+    const names = [
+      ...(body?.toString('latin1').matchAll(/filename="([^"]+)"/g) ?? []),
+    ].map((match) => match[1]);
+    uploadedNames.push(...names);
+    await route.fulfill({
+      status: 201,
+      headers: responseHeaders(),
+      body: JSON.stringify(
+        names.map((name, index) => ({
+          id: `batch-${requestCount}-${index}`,
+          fileUrl: `/uploads/batch-${requestCount}-${index}.webp`,
+          originalName: name,
+          fileType: 'image/webp',
+          fileSize: '1024',
+        })),
+      ),
+    });
+  });
+
+  await page.getByLabel('사진 추가').setInputFiles(selected);
+  await expect(page.locator('a[href*="/uploads/batch-"]')).toHaveCount(4);
+
+  expect(requestCount).toBe(1);
+  expect(uploadedNames).toEqual(
+    selected.map((file) => file.name.replace(/\.[^.]+$/, '.webp')),
+  );
+  expect(requestBytes).toBeLessThan(
+    selected.reduce((total, file) => total + file.buffer.length, 0),
+  );
+});
+
+test('multi-photo upload keeps all files in one pending request', async ({
+  page,
+}) => {
+  await page.goto('/admin/gallery/new');
+
+  let requestCount = 0;
+  let batchFileCount = 0;
   let releaseRequests!: () => void;
   const release = new Promise<void>((resolve) => {
     releaseRequests = resolve;
   });
-  let threeStarted!: () => void;
-  const ready = new Promise<void>((resolve) => {
-    threeStarted = resolve;
+  let requestStarted!: () => void;
+  const started = new Promise<void>((resolve) => {
+    requestStarted = resolve;
   });
 
   await page.route(`${apiOrigin}/api/uploads`, async (route) => {
-    active += 1;
     requestCount += 1;
-    const current = requestCount;
-    maximumActive = Math.max(maximumActive, active);
-    if (requestCount === 3) threeStarted();
+    const body = route.request().postDataBuffer();
+    const names = [
+      ...(body?.toString('latin1').matchAll(/filename="([^"]+)"/g) ?? []),
+    ].map((match) => match[1]);
+    batchFileCount = names.length;
+    requestStarted();
     await release;
     await route.fulfill({
       status: 201,
       headers: responseHeaders(),
-      body: JSON.stringify([
-        {
-          id: `parallel-${current}`,
-          fileUrl: `/uploads/parallel-${current}.webp`,
-          originalName: `parallel-${current}.png`,
+      body: JSON.stringify(
+        names.map((name, index) => ({
+          id: `batch-pending-${index}`,
+          fileUrl: `/uploads/batch-pending-${index}.webp`,
+          originalName: name,
           fileType: 'image/webp',
           fileSize: '1024',
-        },
-      ]),
+        })),
+      ),
     });
-    active -= 1;
   });
 
   await page.getByLabel('사진 추가').setInputFiles(await imageFiles());
   try {
-    await Promise.race([
-      ready,
-      new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error('three concurrent uploads did not start')),
-          3_000,
-        );
-      }),
-    ]);
-    expect(maximumActive).toBe(3);
-    expect(requestCount).toBe(3);
+    await started;
+    expect(requestCount).toBe(1);
+    expect(batchFileCount).toBe(4);
   } finally {
     releaseRequests();
   }
 
-  await expect(page.locator('a[href*="/uploads/parallel-"]')).toHaveCount(4);
+  await expect(page.locator('a[href*="/uploads/batch-pending-"]')).toHaveCount(
+    4,
+  );
 });
 
-test('failed multi-photo upload cleans completed files and remains retryable', async ({
+test('failed multi-photo batch remains retryable without partial files', async ({
   page,
 }) => {
   await page.goto('/admin/gallery/new');
@@ -196,7 +235,7 @@ test('failed multi-photo upload cleans completed files and remains retryable', a
   let deleteCount = 0;
   await page.route(`${apiOrigin}/api/uploads`, async (route) => {
     uploadCount += 1;
-    if (uploadCount === 2) {
+    if (uploadCount === 1) {
       await route.fulfill({
         status: 500,
         headers: responseHeaders(),
@@ -204,18 +243,22 @@ test('failed multi-photo upload cleans completed files and remains retryable', a
       });
       return;
     }
+    const body = route.request().postDataBuffer();
+    const names = [
+      ...(body?.toString('latin1').matchAll(/filename="([^"]+)"/g) ?? []),
+    ].map((match) => match[1]);
     await route.fulfill({
       status: 201,
       headers: responseHeaders(),
-      body: JSON.stringify([
-        {
-          id: `retry-${uploadCount}`,
-          fileUrl: `/uploads/retry-${uploadCount}.webp`,
-          originalName: `retry-${uploadCount}.png`,
+      body: JSON.stringify(
+        names.map((name, index) => ({
+          id: `retry-${index}`,
+          fileUrl: `/uploads/retry-${index}.webp`,
+          originalName: name,
           fileType: 'image/webp',
           fileSize: '1024',
-        },
-      ]),
+        })),
+      ),
     });
   });
   await page.route(`${apiOrigin}/api/uploads/*`, async (route) => {
@@ -229,7 +272,7 @@ test('failed multi-photo upload cleans completed files and remains retryable', a
   const input = page.getByLabel('사진 추가');
   await input.setInputFiles(await imageFiles());
   await expect(page.getByText('강제 업로드 실패')).toBeVisible();
-  expect(deleteCount).toBe(3);
+  expect(deleteCount).toBe(0);
   await expect(page.locator('a[href*="/uploads/retry-"]')).toHaveCount(0);
   await expect(page.getByRole('button', { name: '사진 추가' })).toBeEnabled();
 
@@ -279,7 +322,7 @@ test('upload retries once after refreshing an expired access token', async ({
   expect(uploadCount).toBe(2);
 });
 
-test('real API processes four parallel photos and removes them cleanly', async ({
+test('real API processes one optimized photo batch and removes it cleanly', async ({
   page,
 }) => {
   await page.goto('/admin/gallery/new');
@@ -294,7 +337,7 @@ test('real API processes four parallel photos and removes them cleanly', async (
   await expect(page.locator('a[href*="/uploads/"]')).toHaveCount(4, {
     timeout: 20_000,
   });
-  expect(uploadCount).toBe(4);
+  expect(uploadCount).toBe(1);
 
   for (let remaining = 4; remaining > 0; remaining -= 1) {
     const deleted = page.waitForResponse(

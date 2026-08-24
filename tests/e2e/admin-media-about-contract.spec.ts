@@ -4,7 +4,10 @@ import { expect, test, type BrowserContext, type Page } from '@playwright/test';
 import { z } from 'zod';
 
 const API_ORIGIN = process.env.PW_API_ORIGIN ?? 'http://localhost:4000';
-const PNG = Buffer.from('iVBORw0KGgo=', 'base64');
+const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  'base64',
+);
 const uploadResponseSchema = z.object({
   attachmentIds: z.array(z.string()),
 });
