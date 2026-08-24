@@ -142,7 +142,7 @@ export default async function HomePage() {
           <p>하나님의 말씀을 듣고, 삶으로 살아내는 우리입니다.</p>
         </SectionIntro>
         {featured ? (
-          <Feature delay={120}>
+          <Feature delay={120} data-zone="home-message-featured">
             {featured.youtubeVideoId ? (
               <FeatureFrame>
                 <YouTubeFacade

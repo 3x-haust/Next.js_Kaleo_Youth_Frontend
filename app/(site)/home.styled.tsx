@@ -675,6 +675,7 @@ export const FeatureHeading = styled.div`
 export const FeatureText = styled.div`
   @media (min-width: 1024px) {
     display: flex;
+    width: calc(700px * var(--home-scale));
     flex-direction: column;
     gap: calc(30px * var(--home-scale));
   }
