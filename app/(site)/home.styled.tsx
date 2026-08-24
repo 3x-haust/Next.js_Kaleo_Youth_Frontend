@@ -1145,12 +1145,12 @@ export const Story = styled(Link)`
     position: absolute;
     inset: auto 0 0;
     width: 100%;
-    height: 105px;
+    min-height: 105px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    gap: 6px;
-    padding: 0 28px;
+    justify-content: flex-end;
+    gap: 4px;
+    padding: 16px 28px 20px;
     background: linear-gradient(180deg, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.5) 34%);
   }
 
@@ -1163,12 +1163,11 @@ export const Story = styled(Link)`
     font-size: 30px;
     font-weight: 400;
     letter-spacing: 2px;
-    line-height: 35px;
+    line-height: 1.07;
     color: #f7f9fc;
   }
 
   small {
-    margin-top: 6px;
     color: rgba(247, 249, 252, 0.65);
     font-size: 18px;
     letter-spacing: 2px;
@@ -1190,10 +1189,9 @@ export const Story = styled(Link)`
     outline: 1px solid #ebebeb;
 
     > span {
-      height: calc(105px * var(--home-scale));
+      min-height: calc(105px * var(--home-scale));
       box-sizing: border-box;
-      justify-content: flex-start;
-      padding: calc(20px * var(--home-scale)) calc(30px * var(--home-scale));
+      padding: calc(16px * var(--home-scale)) calc(30px * var(--home-scale)) calc(20px * var(--home-scale));
       background: rgba(0, 0, 0, 0.5);
     }
 

@@ -7,6 +7,7 @@ import { toFileUrl } from '@/lib/format';
 export type GalleryThumbnailCandidate = {
   readonly id: string;
   readonly fileUrl: string;
+  readonly previewUrl?: string;
   readonly name: string;
 };
 
@@ -33,11 +34,12 @@ export function GalleryThumbnailSelector({
             onChange={() => onChange(candidate.fileUrl)}
           />
           <Image
-            src={toFileUrl(candidate.fileUrl)}
+            src={candidate.previewUrl ?? toFileUrl(candidate.fileUrl)}
             alt={candidate.name}
             width={72}
             height={56}
             sizes="72px"
+            unoptimized
           />
           <span>{candidate.name}</span>
         </Choice>

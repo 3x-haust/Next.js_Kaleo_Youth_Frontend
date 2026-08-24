@@ -172,6 +172,93 @@ test('large multi-photo upload uses one optimized batch request', async ({
   );
 });
 
+test('uploaded photos use decoded local previews', async ({ page }) => {
+  await page.goto('/admin/gallery/new');
+
+  let submittedPayload: {
+    attachmentIds?: string[];
+    thumbnailUrl?: string;
+  } | null = null;
+  await page.route(`${apiOrigin}/api/uploads`, async (route) => {
+    const body = route.request().postDataBuffer();
+    const names = [
+      ...(body?.toString('latin1').matchAll(/filename="([^"]+)"/g) ?? []),
+    ].map((match) => match[1]);
+    await route.fulfill({
+      status: 201,
+      headers: responseHeaders(),
+      body: JSON.stringify(
+        names.map((name, index) => ({
+          id: `local-preview-${index}`,
+          fileUrl: `/uploads/unavailable-preview-${index}.webp`,
+          originalName: name,
+          fileType: 'image/webp',
+          fileSize: '1024',
+        })),
+      ),
+    });
+  });
+  await page.route(`${apiOrigin}/api/posts`, async (route) => {
+    if (route.request().method() !== 'POST') {
+      await route.continue();
+      return;
+    }
+    submittedPayload = route.request().postDataJSON() as {
+      attachmentIds?: string[];
+      thumbnailUrl?: string;
+    };
+    await route.fulfill({
+      status: 201,
+      headers: responseHeaders(),
+      body: JSON.stringify({ id: 'local-preview-gallery' }),
+    });
+  });
+
+  await page.getByLabel('사진 추가').setInputFiles((await imageFiles()).slice(0, 2));
+
+  const previews = page
+    .getByRole('radiogroup', { name: '갤러리 대표 이미지' })
+    .locator('img');
+  await expect(previews).toHaveCount(2);
+  await expect(previews.first()).toHaveAttribute('src', /^blob:/);
+  expect(
+    await previews.evaluateAll((images) =>
+      images.every(
+        (image) =>
+          image instanceof HTMLImageElement &&
+          image.complete &&
+          image.naturalWidth > 0,
+      ),
+    ),
+  ).toBe(true);
+  await previews.nth(1).click();
+  await expect(
+    page
+      .getByRole('radiogroup', { name: '갤러리 대표 이미지' })
+      .locator('input')
+      .nth(1),
+  ).toBeChecked();
+  await page
+    .getByRole('radiogroup', { name: '갤러리 대표 이미지' })
+    .screenshot({
+      path: '.omo/evidence/admin-upload-progress/local-preview-selector.png',
+    });
+  await page.getByLabel('제목').fill('gallery-preview-regression');
+  await page.getByLabel('시작일').fill('2026-08-24');
+  const submitted = page.waitForRequest(
+    (request) =>
+      request.method() === 'POST' && request.url() === `${apiOrigin}/api/posts`,
+  );
+  await page.getByRole('button', { name: '갤러리 등록' }).click();
+  await submitted;
+  expect(submittedPayload).toEqual(
+    expect.objectContaining({
+      attachmentIds: ['local-preview-0', 'local-preview-1'],
+      thumbnailUrl: '/uploads/unavailable-preview-1.webp',
+    }),
+  );
+});
+
 test('multi-photo upload keeps all files in one pending request', async ({
   page,
 }) => {
