@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import styled from 'styled-components';
-import type { UploadedFile } from '@/lib/client-api';
+import type { UploadedFile } from '@/lib/client-upload';
 import type { WorshipTeamMember } from '@/lib/types';
 import { existingImage, uploadedIds } from './image-upload';
 import { Input } from './parts';

@@ -146,6 +146,9 @@ test('admin About preserves hidden content while updating pastor, J-Teen, and bo
   await main.locator('#closing-line-first').fill('새 마무리 문구');
   const patchRequest = page.waitForRequest((request) => request.url() === `${API_ORIGIN}/api/about` && request.method() === 'PATCH');
   await main.getByRole('button', { name: '소개 저장' }).click();
+  const rawPayload = (await patchRequest).postDataJSON();
+  expect(rawPayload).not.toHaveProperty('leaderPhotoUrl');
+  expect(rawPayload).not.toHaveProperty('closingPhotoUrl');
   const payload = z.object({
     introEyebrow: z.string(),
     introTitle: z.string(),
@@ -161,7 +164,7 @@ test('admin About preserves hidden content while updating pastor, J-Teen, and bo
     attachmentIds: z.array(z.string()),
     leaderPhotoAttachmentId: z.string(),
     closingPhotoAttachmentId: z.string(),
-  }).parse((await patchRequest).postDataJSON());
+  }).parse(rawPayload);
 
   // Then
   expect(payload).toEqual(expect.objectContaining({
@@ -172,6 +175,32 @@ test('admin About preserves hidden content while updating pastor, J-Teen, and bo
     leaderPhotoAttachmentId: leaderId,
     closingPhotoAttachmentId: closingId,
   }));
+  await expect(main.getByRole('status')).toBeVisible();
+});
+
+test('admin About omits persisted photo URLs when saving text only', async () => {
+  // Given
+  await page.route(`${API_ORIGIN}/api/about`, async (route) => {
+    if (route.request().method() === 'PATCH') {
+      await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+      return;
+    }
+    await route.continue();
+  });
+  await page.goto('/admin/about');
+  const main = page.getByRole('main');
+
+  // When
+  await main.locator('#leader-name').fill('사진 유지 담당자');
+  const patchRequest = page.waitForRequest((request) => request.url() === `${API_ORIGIN}/api/about` && request.method() === 'PATCH');
+  await main.getByRole('button', { name: '소개 저장' }).click();
+  const payload = z.record(z.string(), z.unknown()).parse((await patchRequest).postDataJSON());
+
+  // Then
+  expect(payload).not.toHaveProperty('leaderPhotoUrl');
+  expect(payload).not.toHaveProperty('closingPhotoUrl');
+  expect(payload).not.toHaveProperty('leaderPhotoAttachmentId');
+  expect(payload).not.toHaveProperty('closingPhotoAttachmentId');
   await expect(main.getByRole('status')).toBeVisible();
 });
 

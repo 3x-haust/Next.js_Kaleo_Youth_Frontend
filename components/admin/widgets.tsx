@@ -5,8 +5,14 @@ import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Badge, Button, Notice } from '@/components/ui/primitives';
+import { clientDelete, errorMessage } from '@/lib/client-api';
+import {
+  uploadFiles,
+  type UploadFileProgress,
+  type UploadOwnerType,
+  type UploadedFile,
+} from '@/lib/client-upload';
 import { formatFileSize, toFileUrl } from '@/lib/format';
-import { clientDelete, errorMessage, uploadFiles, type UploadOwnerType, type UploadedFile } from '@/lib/client-api';
 import { ErrorText, Hint } from './parts';
 
 export function FormError({ message }: { message: string | null }) {
@@ -92,6 +98,9 @@ export function FileUploader({
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<
+    readonly UploadFileProgress[]
+  >([]);
 
   async function pick(event: React.ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(event.target.files ?? []);
@@ -100,12 +109,13 @@ export function FileUploader({
     setPending(true);
     setError(null);
     try {
-      const uploaded = await uploadFiles(picked, ownerType);
+      const uploaded = await uploadFiles(picked, ownerType, setUploadProgress);
       onChange(multiple ? [...files, ...uploaded] : uploaded);
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
       setPending(false);
+      setUploadProgress([]);
       if (inputRef.current) inputRef.current.value = '';
     }
   }
@@ -145,6 +155,35 @@ export function FileUploader({
       </Button>
       {hint ? <Hint>{hint}</Hint> : null}
       {error ? <ErrorText>{error}</ErrorText> : null}
+      {uploadProgress.length > 0 ? (
+        <UploadProgressPanel role="status" aria-label="사진 업로드 진행">
+          <UploadProgressSummary>
+            <strong>사진 업로드 진행</strong>
+            <span>
+              {uploadProgress.filter((file) => file.state === 'complete').length}
+              {' / '}
+              {uploadProgress.length}
+            </span>
+          </UploadProgressSummary>
+          <progress
+            max={100}
+            value={uploadPercent(uploadProgress)}
+            aria-label="전체 업로드 진행률"
+          />
+          <UploadProgressFiles>
+            {uploadProgress.map((file, index) => (
+              <li key={`${file.name}-${index}`}>
+                <span title={file.name}>{file.name}</span>
+                <progress
+                  max={100}
+                  value={file.total > 0 ? Math.round((file.loaded / file.total) * 100) : 0}
+                  aria-label={`${file.name} 업로드 진행률`}
+                />
+              </li>
+            ))}
+          </UploadProgressFiles>
+        </UploadProgressPanel>
+      ) : null}
 
       {files.length > 0 ? (
         <FileList>
@@ -174,11 +213,67 @@ export function FileUploader({
   );
 }
 
+function uploadPercent(files: readonly UploadFileProgress[]): number {
+  const total = files.reduce((sum, file) => sum + file.total, 0);
+  if (total === 0) return 0;
+  const loaded = files.reduce((sum, file) => sum + file.loaded, 0);
+  return Math.round((loaded / total) * 100);
+}
+
 const Uploader = styled.div`
   display: flex;
   flex-direction: column;
   gap: 8px;
   align-items: flex-start;
+`;
+
+const UploadProgressPanel = styled.div`
+  width: 100%;
+  display: grid;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid ${({ theme }) => theme.colors.line};
+  border-radius: ${({ theme }) => theme.radius.md};
+  background: ${({ theme }) => theme.colors.bgSoft};
+
+  progress {
+    width: 100%;
+    height: 7px;
+    accent-color: ${({ theme }) => theme.colors.primary};
+  }
+`;
+
+const UploadProgressSummary = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-size: 13px;
+
+  span {
+    color: ${({ theme }) => theme.colors.muted};
+    font-variant-numeric: tabular-nums;
+  }
+`;
+
+const UploadProgressFiles = styled.ul`
+  display: grid;
+  gap: 6px;
+
+  li {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(90px, 28%);
+    align-items: center;
+    gap: 12px;
+    font-size: 12px;
+    color: ${({ theme }) => theme.colors.muted};
+  }
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 `;
 
 const FileList = styled.ul`

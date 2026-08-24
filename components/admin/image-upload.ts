@@ -1,4 +1,4 @@
-import type { UploadedFile } from '@/lib/client-api';
+import type { UploadedFile } from '@/lib/client-upload';
 
 export function existingImage(fileUrl: string, id: string, label: string): UploadedFile {
   return {
