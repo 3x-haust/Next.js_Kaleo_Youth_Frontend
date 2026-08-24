@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import { Button } from '@/components/ui/primitives';
-import { clientPatch, errorMessage, type UploadedFile } from '@/lib/client-api';
+import { clientPatch, errorMessage } from '@/lib/client-api';
+import type { UploadedFile } from '@/lib/client-upload';
 import { aboutSchema, fieldErrors, type AboutInput } from '@/lib/schemas';
 import type { AboutPage } from '@/lib/types';
 import { existingImage } from './image-upload';
@@ -70,8 +71,6 @@ export function AboutEditor({ about }: { readonly about: AboutPage }) {
         leaderEyebrow: about.leaderEyebrow,
         teamEyebrow: about.teamEyebrow,
         closingLabel: about.closingLabel,
-        leaderPhotoUrl: newLeader ? undefined : (leaderPhoto.at(-1)?.fileUrl ?? ''),
-        closingPhotoUrl: newClosing ? undefined : (closingPhoto.at(-1)?.fileUrl ?? ''),
         attachmentIds: uploads.map((file) => file.id),
         leaderPhotoAttachmentId: newLeader?.id,
         closingPhotoAttachmentId: newClosing?.id,

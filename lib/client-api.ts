@@ -150,34 +150,6 @@ export async function clientAuthPost<T>(path: string, body?: unknown): Promise<T
   return parse<T>(await send('POST', path, body, { noRetry: true }));
 }
 
-export interface UploadedFile {
-  readonly id: string;
-  readonly fileUrl: string;
-  readonly originalName: string | null;
-  readonly fileType: string | null;
-  readonly fileSize: string | null;
-  readonly isPersisted?: boolean;
-}
-
-export type UploadOwnerType =
-  | 'post'
-  | 'setlist'
-  | 'event'
-  | 'sermon'
-  | 'worship_team'
-  | 'worship_team_member'
-  | 'about_page';
-
-export async function uploadFiles(
-  files: File[],
-  ownerType: UploadOwnerType,
-): Promise<UploadedFile[]> {
-  const form = new FormData();
-  form.append('ownerType', ownerType);
-  for (const file of files) form.append('files', file);
-  return parse<UploadedFile[]>(await send('POST', '/uploads', form));
-}
-
 export function errorMessage(error: unknown): string {
   if (error instanceof ClientApiError) return error.message;
   if (error instanceof Error && error.message) return error.message;

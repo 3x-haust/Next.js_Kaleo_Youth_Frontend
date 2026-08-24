@@ -3,7 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Button } from '@/components/ui/primitives';
-import { clientDelete, clientPatch, clientPost, errorMessage, type UploadedFile } from '@/lib/client-api';
+import { clientDelete, clientPatch, clientPost, errorMessage } from '@/lib/client-api';
+import type { UploadedFile } from '@/lib/client-upload';
 import { fieldErrors, postSchema } from '@/lib/schemas';
 import type { Post } from '@/lib/types';
 import {

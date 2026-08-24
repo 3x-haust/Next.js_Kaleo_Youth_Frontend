@@ -8,8 +8,8 @@ import {
   clientPatch,
   clientPost,
   errorMessage,
-  uploadFiles,
 } from '@/lib/client-api';
+import { uploadFiles } from '@/lib/client-upload';
 import { youtubeWatchUrl } from '@/lib/format';
 import { fieldErrors, playlistUrlSchema, setlistSchema } from '@/lib/schemas';
 import type { PlaylistImportResult, Setlist, SetlistAttachment } from '@/lib/types';

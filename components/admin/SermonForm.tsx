@@ -8,8 +8,8 @@ import {
   clientPatch,
   clientPost,
   errorMessage,
-  type UploadedFile,
 } from '@/lib/client-api';
+import type { UploadedFile } from '@/lib/client-upload';
 import { youtubeWatchUrl } from '@/lib/format';
 import { fieldErrors, sermonSchema } from '@/lib/schemas';
 import type { Sermon } from '@/lib/types';
