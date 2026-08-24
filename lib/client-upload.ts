@@ -3,15 +3,15 @@
 import {
   ClientApiError,
   clientAuthPost,
-  clientDelete,
 } from '@/lib/client-api';
+import { optimizeUploadFile } from '@/lib/client-image-upload';
 
 const API_ORIGIN =
   process.env.NEXT_PUBLIC_API_ORIGIN ?? 'https://api.kaleoyouth.com';
 const UPLOAD_URL = `${API_ORIGIN}/api/uploads`;
 const CSRF_COOKIE = 'kaleo_csrf';
 const CSRF_HEADER = 'x-csrf-token';
-const MAX_PARALLEL_UPLOADS = 3;
+const MAX_PARALLEL_PREPARATIONS = 2;
 
 export interface UploadedFile {
   readonly id: string;
@@ -69,10 +69,10 @@ function responseMessage(request: XMLHttpRequest): string {
   return `요청을 처리하지 못했습니다. (${request.status})`;
 }
 
-async function uploadFile(
-  file: File,
+async function uploadBatch(
+  files: readonly File[],
   ownerType: UploadOwnerType,
-  onProgress: (loaded: number, total: number) => void,
+  onProgress: (loaded: number) => void,
   canRetry = true,
 ): Promise<UploadedFile[]> {
   return new Promise((resolve, reject) => {
@@ -84,7 +84,10 @@ async function uploadFile(
     if (csrfToken) request.setRequestHeader(CSRF_HEADER, csrfToken);
 
     request.upload.onprogress = (event) => {
-      onProgress(event.loaded, event.lengthComputable ? event.total : file.size);
+      onProgress(event.loaded);
+    };
+    request.upload.onload = () => {
+      onProgress(files.reduce((total, file) => total + file.size, 0));
     };
     request.onerror = () => {
       reject(new ClientApiError(0, '업로드 연결이 끊어졌습니다.'));
@@ -93,7 +96,7 @@ async function uploadFile(
       if (request.status === 401 && canRetry) {
         try {
           await refreshSession();
-          resolve(await uploadFile(file, ownerType, onProgress, false));
+          resolve(await uploadBatch(files, ownerType, onProgress, false));
         } catch (error) {
           reject(error);
         }
@@ -108,7 +111,7 @@ async function uploadFile(
 
     const form = new FormData();
     form.append('ownerType', ownerType);
-    form.append('files', file);
+    for (const file of files) form.append('files', file);
     request.send(form);
   });
 }
@@ -124,28 +127,32 @@ export async function uploadFiles(
     total: file.size,
     state: 'queued',
   }));
-  const results: UploadedFile[][] = Array.from({ length: files.length }, () => []);
+  const prepared: File[] = Array.from({ length: files.length });
   const failures: unknown[] = [];
   let cursor = 0;
 
-  function update(index: number, change: Partial<UploadFileProgress>) {
-    progress[index] = { ...progress[index], ...change };
+  function publish() {
     onProgress?.(progress.map((item) => ({ ...item })));
   }
 
-  async function worker() {
+  function update(index: number, change: Partial<UploadFileProgress>) {
+    progress[index] = { ...progress[index], ...change };
+    publish();
+  }
+
+  async function prepareWorker() {
     while (cursor < files.length) {
       const index = cursor;
       cursor += 1;
       const file = files[index];
-      update(index, { state: 'uploading' });
       try {
-        results[index] = await uploadFile(file, ownerType, (loaded, total) => {
-          update(index, { loaded, total });
-        });
+        update(index, { state: 'uploading' });
+        const optimized = await optimizeUploadFile(file);
+        prepared[index] = optimized;
         update(index, {
-          loaded: progress[index].total,
-          state: 'complete',
+          loaded: 0,
+          total: optimized.size,
+          state: 'queued',
         });
       } catch (error) {
         failures.push(error);
@@ -154,16 +161,41 @@ export async function uploadFiles(
     }
   }
 
-  onProgress?.(progress);
-  const workerCount = Math.min(MAX_PARALLEL_UPLOADS, files.length);
-  await Promise.all(Array.from({ length: workerCount }, () => worker()));
+  publish();
+  const preparationCount = Math.min(
+    MAX_PARALLEL_PREPARATIONS,
+    files.length,
+  );
+  await Promise.all(
+    Array.from({ length: preparationCount }, () => prepareWorker()),
+  );
 
-  const uploaded = results.flat();
   if (failures.length > 0) {
-    await Promise.allSettled(
-      uploaded.map((file) => clientDelete(`/uploads/${file.id}`)),
-    );
     throw failures[0];
   }
-  return uploaded;
+
+  for (let index = 0; index < progress.length; index += 1) {
+    progress[index] = { ...progress[index], state: 'uploading' };
+  }
+  publish();
+
+  const uploaded = await uploadBatch(prepared, ownerType, (loaded) => {
+    let remaining = loaded;
+    for (let index = 0; index < prepared.length; index += 1) {
+      const file = prepared[index];
+      const fileLoaded = Math.min(file.size, Math.max(0, remaining));
+      remaining -= file.size;
+      progress[index] = {
+        ...progress[index],
+        loaded: fileLoaded,
+        state: fileLoaded >= file.size ? 'complete' : 'uploading',
+      };
+    }
+    publish();
+  });
+
+  return uploaded.map((file, index) => ({
+    ...file,
+    originalName: files[index]?.name ?? file.originalName,
+  }));
 }
