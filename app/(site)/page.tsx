@@ -222,6 +222,8 @@ export default async function HomePage() {
                     width={450}
                     height={500}
                     sizes="(max-width: 639px) 100vw, (max-width: 1023px) 50vw, 450px"
+                    loading="eager"
+                    unoptimized
                   />
                 ) : (
                   <StoryPlaceholder aria-hidden="true" />

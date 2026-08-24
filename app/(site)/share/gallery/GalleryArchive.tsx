@@ -93,6 +93,7 @@ export function GalleryArchive({ initialResult, keyword }: Props) {
                   sizes="(max-width: 639px) calc(100vw - 32px), (max-width: 1023px) calc(50vw - 32px), (max-width: 1919px) 29vw, 554px"
                   loading={index === 0 ? 'eager' : 'lazy'}
                   fetchPriority={index === 0 ? 'high' : 'auto'}
+                  unoptimized
                 />
               ) : (
                 <ImagePlaceholder aria-hidden="true" />

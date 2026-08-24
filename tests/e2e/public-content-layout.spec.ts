@@ -91,6 +91,38 @@ test('home sermon title clears its CTA', async ({ page }) => {
     });
 });
 
+test('home gallery cards grow upward for wrapped titles', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  await page.goto('/');
+
+  const story = page
+    .locator('section[aria-labelledby="gallery-title"] a[href^="/share/gallery/"]')
+    .first();
+  const overlay = story.locator(':scope > span');
+  const title = overlay.locator('strong');
+  const date = overlay.locator('small');
+  await story.scrollIntoViewIfNeeded();
+  await title.evaluate((element) => {
+    element.textContent = '가나다라마바사 아자차카타 파하 '.repeat(6);
+  });
+
+  const [overlayBox, titleBox, dateBox] = await Promise.all([
+    overlay.boundingBox(),
+    title.boundingBox(),
+    date.boundingBox(),
+  ]);
+  expect(overlayBox).not.toBeNull();
+  expect(titleBox).not.toBeNull();
+  expect(dateBox).not.toBeNull();
+  expect(overlayBox!.height).toBeGreaterThan(105);
+  expect(titleBox!.y + titleBox!.height).toBeLessThanOrEqual(dateBox!.y);
+  expect(overlayBox!.y + overlayBox!.height - (dateBox!.y + dateBox!.height))
+    .toBeCloseTo(20, 0);
+  await story.screenshot({
+    path: `${evidenceDir}/home-gallery-wrapped-title.png`,
+  });
+});
+
 test('home sermon empty state is intentional and useful', async ({ page }) => {
   await withEmptySermons(async () => {
     await page.setViewportSize({ width: 1440, height: 1000 });

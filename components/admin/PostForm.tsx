@@ -60,9 +60,10 @@ export function PostForm({ post }: { post?: Post }) {
     ...uploaded
       .filter((file) => file.fileType?.startsWith('image/'))
       .map((file, index) => ({
-        id: file.id,
-        fileUrl: file.fileUrl,
-        name: file.originalName ?? `새 사진 ${index + 1}`,
+      id: file.id,
+      fileUrl: file.fileUrl,
+      previewUrl: file.previewUrl,
+      name: file.originalName ?? `새 사진 ${index + 1}`,
       })),
   ];
 

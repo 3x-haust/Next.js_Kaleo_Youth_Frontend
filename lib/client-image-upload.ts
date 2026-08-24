@@ -2,8 +2,8 @@
 
 import { ClientApiError } from '@/lib/client-api';
 
-const MAX_IMAGE_EDGE = 3840;
-const WEBP_QUALITY = 0.82;
+const MAX_IMAGE_EDGE = 2560;
+const WEBP_QUALITY = 0.8;
 const CONVERTIBLE_IMAGE_TYPES = new Set([
   'image/jpeg',
   'image/png',

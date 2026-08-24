@@ -146,6 +146,7 @@ export function PhotoGrid({ photos, title }: { photos: Attachment[]; title: stri
           sizes="(max-width: 1919px) calc(100vw - 32px), 1720px"
           loading="eager"
           fetchPriority="high"
+          unoptimized
         />
       </Hero>
 
@@ -178,6 +179,7 @@ export function PhotoGrid({ photos, title }: { photos: Attachment[]; title: stri
                     fill
                     sizes="(max-width: 639px) 20vw, (max-width: 1023px) 21vw, 360px"
                     loading="eager"
+                    unoptimized
                   />
                 </ThumbButton>
               </li>
@@ -204,6 +206,7 @@ export function PhotoGrid({ photos, title }: { photos: Attachment[]; title: stri
             width={1720}
             height={960}
             sizes="100vw"
+            unoptimized
             onClick={(event) => event.stopPropagation()}
           />
           <CloseButton type="button" onClick={close} aria-label="닫기" autoFocus>

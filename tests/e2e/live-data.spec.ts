@@ -55,6 +55,28 @@ test('homepage gallery reflects backend CMS records when present', async ({ page
   await expect(page.locator('main')).toContainText(records[0].title);
 });
 
+test('homepage gallery loads uploaded images without the optimizer proxy', async ({
+  page,
+}) => {
+  await page.goto('/');
+  const image = page
+    .locator('section[aria-labelledby="gallery-title"] a[href^="/share/gallery/"] img')
+    .first();
+  if ((await image.count()) === 0) return;
+
+  await expect(image).not.toHaveAttribute('src', /\/_next\/image/);
+  await expect
+    .poll(() =>
+      image.evaluate(
+        (element) =>
+          element instanceof HTMLImageElement &&
+          element.complete &&
+          element.naturalWidth > 0,
+      ),
+    )
+    .toBe(true);
+});
+
 test('gallery list and detail use selected dates instead of upload timestamps', async ({
   page,
   request,

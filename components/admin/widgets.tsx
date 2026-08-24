@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
 import { Badge, Button, Notice } from '@/components/ui/primitives';
 import { clientDelete, errorMessage } from '@/lib/client-api';
@@ -101,6 +101,20 @@ export function FileUploader({
   const [uploadProgress, setUploadProgress] = useState<
     readonly UploadFileProgress[]
   >([]);
+  const filesRef = useRef(files);
+
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  useEffect(
+    () => () => {
+      filesRef.current.forEach((file) => {
+        if (file.previewUrl) URL.revokeObjectURL(file.previewUrl);
+      });
+    },
+    [],
+  );
 
   async function pick(event: React.ChangeEvent<HTMLInputElement>) {
     const picked = Array.from(event.target.files ?? []);
@@ -110,6 +124,11 @@ export function FileUploader({
     setError(null);
     try {
       const uploaded = await uploadFiles(picked, ownerType, setUploadProgress);
+      if (!multiple) {
+        files.forEach((file) => {
+          if (file.previewUrl) URL.revokeObjectURL(file.previewUrl);
+        });
+      }
       onChange(multiple ? [...files, ...uploaded] : uploaded);
     } catch (caught) {
       setError(errorMessage(caught));
@@ -127,6 +146,7 @@ export function FileUploader({
 
     try {
       await clientDelete(`/uploads/${file.id}`);
+      if (file.previewUrl) URL.revokeObjectURL(file.previewUrl);
     } catch (caught) {
       onChange(files);
       setError(errorMessage(caught));
@@ -191,11 +211,12 @@ export function FileUploader({
             <li key={file.id}>
               {(file.fileType?.startsWith('image/') ?? /\.(avif|gif|jpe?g|png|webp)$/i.test(file.fileUrl)) ? (
                 <Image
-                  src={toFileUrl(file.fileUrl)}
+                  src={file.previewUrl ?? toFileUrl(file.fileUrl)}
                   alt={file.originalName ?? '업로드 이미지 미리보기'}
                   width={72}
                   height={56}
                   sizes="72px"
+                  unoptimized
                 />
               ) : null}
               <a href={toFileUrl(file.fileUrl)} target="_blank" rel="noopener noreferrer">

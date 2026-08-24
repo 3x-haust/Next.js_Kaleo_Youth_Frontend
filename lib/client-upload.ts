@@ -16,6 +16,7 @@ const MAX_PARALLEL_PREPARATIONS = 2;
 export interface UploadedFile {
   readonly id: string;
   readonly fileUrl: string;
+  readonly previewUrl?: string;
   readonly originalName: string | null;
   readonly fileType: string | null;
   readonly fileSize: string | null;
@@ -67,6 +68,18 @@ function responseMessage(request: XMLHttpRequest): string {
   if (request.status === 403) return '권한이 없거나 요청이 거부되었습니다.';
   if (request.status === 429) return '요청이 너무 잦습니다. 잠시 후 다시 시도해 주세요.';
   return `요청을 처리하지 못했습니다. (${request.status})`;
+}
+
+async function decodePreview(url: string): Promise<string | undefined> {
+  const image = new Image();
+  image.src = url;
+  try {
+    await image.decode();
+    return url;
+  } catch {
+    URL.revokeObjectURL(url);
+    return undefined;
+  }
 }
 
 async function uploadBatch(
@@ -179,23 +192,33 @@ export async function uploadFiles(
   }
   publish();
 
-  const uploaded = await uploadBatch(prepared, ownerType, (loaded) => {
-    let remaining = loaded;
-    for (let index = 0; index < prepared.length; index += 1) {
-      const file = prepared[index];
-      const fileLoaded = Math.min(file.size, Math.max(0, remaining));
-      remaining -= file.size;
-      progress[index] = {
-        ...progress[index],
-        loaded: fileLoaded,
-        state: fileLoaded >= file.size ? 'complete' : 'uploading',
-      };
-    }
-    publish();
-  });
+  const previewUrls = prepared.map((file) => URL.createObjectURL(file));
+  const previewsReady = Promise.all(previewUrls.map(decodePreview));
+  let uploaded: UploadedFile[];
+  try {
+    uploaded = await uploadBatch(prepared, ownerType, (loaded) => {
+      let remaining = loaded;
+      for (let index = 0; index < prepared.length; index += 1) {
+        const file = prepared[index];
+        const fileLoaded = Math.min(file.size, Math.max(0, remaining));
+        remaining -= file.size;
+        progress[index] = {
+          ...progress[index],
+          loaded: fileLoaded,
+          state: fileLoaded >= file.size ? 'complete' : 'uploading',
+        };
+      }
+      publish();
+    });
+  } catch (error) {
+    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    throw error;
+  }
+  const decodedPreviews = await previewsReady;
 
   return uploaded.map((file, index) => ({
     ...file,
+    previewUrl: decodedPreviews[index],
     originalName: files[index]?.name ?? file.originalName,
   }));
 }
