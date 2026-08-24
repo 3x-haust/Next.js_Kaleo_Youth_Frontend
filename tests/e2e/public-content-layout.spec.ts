@@ -66,6 +66,31 @@ test('home featured sermon stays complete', async ({ page, request }) => {
   });
 });
 
+test('home sermon title clears its CTA', async ({ page }) => {
+  await page.setViewportSize({ width: 1920, height: 1200 });
+  await page.goto('/');
+
+  const title = page.locator('[data-zone="home-message-section"] h3');
+  const cta = page.getByRole('link', { name: '더 많은 영상 보기' });
+  await title.scrollIntoViewIfNeeded();
+  await expect(
+    page.locator('[data-zone="home-message-featured"]'),
+  ).toHaveCSS('opacity', '1');
+  const [titleBox, ctaBox] = await Promise.all([
+    title.boundingBox(),
+    cta.boundingBox(),
+  ]);
+
+  expect(titleBox).not.toBeNull();
+  expect(ctaBox).not.toBeNull();
+  expect(titleBox!.x + titleBox!.width).toBeLessThanOrEqual(ctaBox!.x - 24);
+  await page
+    .locator('[data-zone="home-message-section"]')
+    .screenshot({
+      path: `${evidenceDir}/home-sermon-title-clearance.png`,
+    });
+});
+
 test('home sermon empty state is intentional and useful', async ({ page }) => {
   await withEmptySermons(async () => {
     await page.setViewportSize({ width: 1440, height: 1000 });
