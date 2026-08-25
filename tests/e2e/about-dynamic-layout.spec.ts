@@ -114,3 +114,35 @@ test('aligns the desktop underglow with a dynamically shifted closing section', 
   expect(Math.abs(geometry.glowOffset)).toBeLessThanOrEqual(1);
   expect(Math.abs(geometry.ambientOffset)).toBeLessThanOrEqual(1);
 });
+
+test('packs an eighth desktop member into the existing final row', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto('/about');
+  await page.waitForFunction(() => {
+    const route = document.querySelector<HTMLElement>('[data-reduced-motion="true"]');
+    if (!route) return false;
+    const styles = getComputedStyle(route);
+    return styles.opacity === '1' && styles.transform === 'none';
+  });
+
+  const geometry = await page.evaluate(() => {
+    const cards = [...document.querySelectorAll<HTMLElement>('[data-zone="about-member-card"]')];
+    const seventh = cards[6];
+    const grid = seventh?.parentElement;
+    if (!seventh || !grid) throw new Error('Seven-member About fixture is incomplete');
+    const eighth = seventh.cloneNode(true);
+    if (!(eighth instanceof HTMLElement)) throw new Error('Eighth member clone failed');
+    grid.append(eighth);
+
+    const seventhBox = seventh.getBoundingClientRect();
+    const eighthBox = eighth.getBoundingClientRect();
+    return {
+      rowOffset: eighthBox.top - seventhBox.top,
+      columnOffset: eighthBox.left - seventhBox.left,
+    };
+  });
+
+  expect(Math.abs(geometry.rowOffset)).toBeLessThanOrEqual(1);
+  expect(geometry.columnOffset).toBeGreaterThan(0);
+});

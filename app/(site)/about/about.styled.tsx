@@ -609,10 +609,6 @@ export const Member = styled.article`
     letter-spacing: 0.08em;
   }
 
-  &:last-child {
-    grid-column: 2;
-  }
-
   @media (max-width: 1023px) {
     width: 100%;
   }
@@ -640,10 +636,6 @@ export const Member = styled.article`
     &:nth-child(5) > div { width: ${frame(212)}; }
     &:nth-child(6) > div { width: ${frame(152)}; }
     &:nth-child(7) > div { width: ${frame(135)}; }
-
-    &:last-child {
-      grid-column: 1;
-    }
 
     small {
       display: block;
@@ -691,9 +683,6 @@ export const Member = styled.article`
   @media (max-width: 1023px) {
     width: 100%;
 
-    &:last-child {
-      grid-column: auto;
-    }
   }
 
 `;
