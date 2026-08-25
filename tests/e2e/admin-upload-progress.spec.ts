@@ -512,3 +512,36 @@ test('real API processes one optimized photo batch and removes it cleanly', asyn
   }
   await expect(page.locator('a[href*="/uploads/"]')).toHaveCount(0);
 });
+
+test('real API processes eleven HEIC photos across three batches', async ({
+  page,
+}) => {
+  await page.goto('/admin/gallery/new');
+
+  let uploadCount = 0;
+  page.on('request', (request) => {
+    if (
+      request.url() === `${apiOrigin}/api/uploads` &&
+      request.method() === 'POST'
+    ) {
+      uploadCount += 1;
+    }
+  });
+
+  await page.getByLabel('사진 추가').setInputFiles(await heicFiles());
+  await expect(page.locator('a[href*="/uploads/"]')).toHaveCount(11, {
+    timeout: 30_000,
+  });
+  expect(uploadCount).toBe(3);
+
+  for (let remaining = 11; remaining > 0; remaining -= 1) {
+    const deleted = page.waitForResponse(
+      (response) =>
+        response.url().startsWith(`${apiOrigin}/api/uploads/`) &&
+        response.request().method() === 'DELETE',
+    );
+    await page.getByRole('button', { name: '제거' }).first().click();
+    expect((await deleted).ok()).toBe(true);
+  }
+  await expect(page.locator('a[href*="/uploads/"]')).toHaveCount(0);
+});
