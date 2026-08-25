@@ -1,0 +1,69 @@
+import { expect, test } from '@playwright/test';
+
+test('keeps variable leader copy and team cards in flow', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1170, height: 900 });
+  await page.goto('/about');
+
+  const geometry = await page.evaluate(() => {
+    const leader = document.querySelector<HTMLElement>('[data-zone="about-leader"]');
+    const quote = leader?.querySelector<HTMLElement>('blockquote');
+    const team = document.querySelector<HTMLElement>('section[aria-labelledby="team-title"]');
+    const grid = team?.querySelector<HTMLElement>('[data-zone="about-member-card"]')
+      ?.parentElement;
+    const closing = team?.nextElementSibling as HTMLElement | null;
+    if (!leader || !quote || !team || !grid || !closing) {
+      throw new Error('About layout contract is incomplete');
+    }
+
+    quote.style.height = '800px';
+    grid.style.height = '1422px';
+
+    const quoteBox = quote.getBoundingClientRect();
+    const teamBox = team.getBoundingClientRect();
+    const gridBox = grid.getBoundingClientRect();
+    const closingBox = closing.getBoundingClientRect();
+    const role = grid.querySelector<HTMLElement>('small');
+
+    return {
+      leaderToTeamGap: teamBox.top - quoteBox.bottom,
+      teamToClosingGap: closingBox.top - gridBox.bottom,
+      roleWhiteSpace: role ? getComputedStyle(role).whiteSpace : '',
+      horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
+    };
+  });
+
+  expect(geometry.leaderToTeamGap).toBeGreaterThanOrEqual(50);
+  expect(geometry.teamToClosingGap).toBeGreaterThanOrEqual(20);
+  expect(geometry.roleWhiteSpace).toBe('nowrap');
+  expect(geometry.horizontalOverflow).toBeLessThanOrEqual(1);
+});
+
+test('contains every member card before the closing section at tablet width', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 768, height: 900 });
+  await page.goto('/about');
+
+  const geometry = await page.evaluate(() => {
+    const team = document.querySelector<HTMLElement>('section[aria-labelledby="team-title"]');
+    const grid = team?.querySelector<HTMLElement>('[data-zone="about-member-card"]')
+      ?.parentElement;
+    const closing = team?.nextElementSibling as HTMLElement | null;
+    if (!team || !grid || !closing) {
+      throw new Error('About team layout contract is incomplete');
+    }
+
+    grid.style.height = '1900px';
+    const gridBox = grid.getBoundingClientRect();
+    const closingBox = closing.getBoundingClientRect();
+    return {
+      closingGap: closingBox.top - gridBox.bottom,
+      horizontalOverflow: document.documentElement.scrollWidth - window.innerWidth,
+    };
+  });
+
+  expect(geometry.closingGap).toBeGreaterThanOrEqual(20);
+  expect(geometry.horizontalOverflow).toBeLessThanOrEqual(1);
+});

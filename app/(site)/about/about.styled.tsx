@@ -34,7 +34,7 @@ export const Page = styled.div`
   }
 
   @media (min-width: 1024px) {
-    height: ${frame(3290)};
+    height: auto;
     min-height: ${frame(3290)};
     overflow: hidden;
     border-bottom: 0;
@@ -328,7 +328,8 @@ export const Leader = styled.section`
   }
 
   @media (min-width: 1024px) {
-    height: ${frame(660)};
+    height: auto;
+    min-height: ${frame(660)};
     grid-template-columns: ${frame(312)} ${frame(735)};
     justify-content: start;
     padding: ${frame(135)} ${frame(100)};
@@ -340,7 +341,7 @@ export const Leader = styled.section`
 
     > div:last-child {
       width: ${frame(735)};
-      height: ${frame(390)};
+      min-height: ${frame(390)};
 
       > ${Eyebrow} {
         width: ${frame(210)};
@@ -401,7 +402,8 @@ export const Leader = styled.section`
 
     blockquote {
       width: ${frame(735)};
-      height: ${frame(180)};
+      min-height: ${frame(180)};
+      height: auto;
       margin-top: ${frame(80)};
       color: #f0f0ee;
       font-size: ${frame(30)};
@@ -519,7 +521,27 @@ export const MemberPortrait = styled.span<{ $hasPhoto: boolean }>`
   }
 `;
 
-export const MemberIcon = styled.span`
+export type TeamInstrument =
+  | 'electric-guitar'
+  | 'drums'
+  | 'main-keyboard'
+  | 'second-keyboard'
+  | 'bass'
+  | 'vocal';
+
+const instrumentGeometry: Record<
+  TeamInstrument,
+  { left: number; top: number; width: number; height: number }
+> = {
+  'electric-guitar': { left: 418, top: 22, width: 122, height: 108 },
+  drums: { left: 421, top: 3, width: 125, height: 125 },
+  'main-keyboard': { left: 422, top: 18, width: 121, height: 111 },
+  'second-keyboard': { left: 411, top: 18, width: 135, height: 100 },
+  bass: { left: 407, top: 12, width: 138, height: 126 },
+  vocal: { left: 433, top: 24, width: 115, height: 100 },
+};
+
+export const MemberIcon = styled.span<{ $instrument: TeamInstrument }>`
   position: absolute;
   top: 26px;
   right: 26px;
@@ -539,6 +561,13 @@ export const MemberIcon = styled.span`
     stroke-width: 4;
     stroke-linecap: round;
     stroke-linejoin: round;
+  }
+
+  @media (min-width: 1024px) {
+    left: ${({ $instrument }) => frame(instrumentGeometry[$instrument].left)};
+    top: ${({ $instrument }) => frame(instrumentGeometry[$instrument].top)};
+    width: ${({ $instrument }) => frame(instrumentGeometry[$instrument].width)};
+    height: ${({ $instrument }) => frame(instrumentGeometry[$instrument].height)};
   }
 `;
 
@@ -594,14 +623,6 @@ export const Member = styled.article`
     border-radius: ${frame(13.965)};
     background: rgba(255, 255, 255, 0.1);
 
-    &:nth-child(1) ${MemberIcon} { left: ${frame(419)}; top: ${frame(23)}; width: ${frame(122)}; height: ${frame(108)}; }
-    &:nth-child(2) ${MemberIcon} { left: ${frame(423)}; top: ${frame(5)}; width: ${frame(125)}; height: ${frame(125)}; }
-    &:nth-child(3) ${MemberIcon} { left: ${frame(423)}; top: ${frame(19)}; width: ${frame(121)}; height: ${frame(111)}; }
-    &:nth-child(4) ${MemberIcon} { left: ${frame(412)}; top: ${frame(19)}; width: ${frame(135)}; height: ${frame(100)}; }
-    &:nth-child(5) ${MemberIcon} { left: ${frame(408)}; top: ${frame(13)}; width: ${frame(138)}; height: ${frame(126)}; }
-    &:nth-child(6) ${MemberIcon},
-    &:nth-child(7) ${MemberIcon} { left: ${frame(434)}; top: ${frame(23)}; width: ${frame(115)}; height: ${frame(100)}; }
-
     > div {
       left: ${frame(259.444)};
       top: ${frame(97.452)};
@@ -630,6 +651,7 @@ export const Member = styled.article`
       font-weight: 600;
       line-height: ${frame(16.986)};
       letter-spacing: 0;
+      white-space: nowrap;
     }
 
     h3 {
@@ -700,15 +722,15 @@ export const Team = styled.section`
 
   @media (min-width: 1024px) {
     margin-top: ${frame(100)};
-    height: ${frame(1425)};
-    padding: 0;
+    height: auto;
+    min-height: ${frame(1425)};
+    padding: 0 ${frame(70)} ${frame(66)};
     position: relative;
     background: transparent;
 
     > header {
-      position: absolute;
-      top: 0;
-      left: ${frame(427.5)};
+      position: relative;
+      left: ${frame(357.5)};
       width: ${frame(1065)};
       height: ${frame(215)};
       text-align: center;
@@ -762,6 +784,14 @@ export const Team = styled.section`
         letter-spacing: ${frame(2)};
         white-space: pre-line;
       }
+    }
+
+    ${MemberGrid} {
+      position: relative;
+      top: auto;
+      left: auto;
+      height: auto;
+      margin-top: ${frame(90)};
     }
   }
 

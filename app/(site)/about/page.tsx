@@ -5,7 +5,12 @@ import { Reveal } from '@/components/motion/Motion';
 import { PageUnderGlow, PageUnderGlowClip } from '@/components/ui/primitives';
 import { apiGet } from '@/lib/api';
 import { toFileUrl } from '@/lib/format';
-import type { AboutPage, AboutValue, WorshipTeam } from '@/lib/types';
+import type {
+  AboutPage,
+  AboutValue,
+  WorshipTeam,
+  WorshipTeamMember,
+} from '@/lib/types';
 import {
   Closing,
   ClosingCopy,
@@ -22,6 +27,7 @@ import {
   MemberPortrait,
   Page,
   Team,
+  type TeamInstrument,
   ValueDivider,
   ValueIcon,
   Values,
@@ -48,20 +54,74 @@ function ValueGlyph({ icon }: { readonly icon: AboutValue['icon'] }) {
   return <svg viewBox="0 0 72 56"><path d="M24 27a11 11 0 1 0 0-22 11 11 0 0 0 0 22Zm24 0a11 11 0 1 0 0-22 11 11 0 0 0 0 22ZM4 52c1-13 8-20 20-20s19 7 20 20m-8 0c1-13 5-20 12-20 12 0 19 7 20 20" /></svg>;
 }
 
-function TeamIcon({ role }: { role: string }) {
-  const icon = role === 'Electric Guitar'
-    ? 'electric-guitar'
-    : role === 'DRUMS'
-      ? 'drums'
-      : role === 'MAIN KEYBOARD'
-        ? 'main-keyboard'
-        : role === 'SECOND KEYBOARD'
-          ? 'second-keyboard'
-          : role === 'BASS'
-            ? 'bass'
-            : 'vocal';
+function normalizeTeamRole(part: string | null): string {
+  const role = part?.trim() ?? '';
+  const uppercase = role.toLocaleUpperCase('en-US');
+  if (['ELECTRIC GUITAR', 'ELECTRIC_GUITAR', '일렉', '기타'].includes(uppercase)) {
+    return 'ELECTRIC GUITAR';
+  }
+  return uppercase;
+}
 
-  return <Image src={`/images/about/exact/icons-svg/${icon}.svg`} alt="" fill sizes="140px" unoptimized />;
+function instrumentForRole(role: string): TeamInstrument {
+  switch (role) {
+    case 'ELECTRIC GUITAR':
+      return 'electric-guitar';
+    case 'DRUMS':
+      return 'drums';
+    case 'MAIN KEYBOARD':
+      return 'main-keyboard';
+    case 'SECOND KEYBOARD':
+      return 'second-keyboard';
+    case 'BASS':
+      return 'bass';
+    default:
+      return 'vocal';
+  }
+}
+
+function TeamIcon({ instrument }: { instrument: TeamInstrument }) {
+  return (
+    <Image
+      src={`/images/about/exact/icons-svg/${instrument}.svg`}
+      alt=""
+      fill
+      sizes="140px"
+      unoptimized
+    />
+  );
+}
+
+function TeamMemberCard({ member }: { member: WorshipTeamMember }) {
+  const role = normalizeTeamRole(member.part);
+  const instrument = instrumentForRole(role);
+
+  return (
+    <Member data-zone="about-member-card">
+      <MemberPortrait
+        $hasPhoto={Boolean(member.photoUrl)}
+        aria-hidden="true"
+        data-zone="about-member-portrait"
+      >
+        {member.photoUrl ? (
+          <Image
+            src={toFileUrl(member.photoUrl)}
+            alt=""
+            fill
+            sizes="215px"
+          />
+        ) : null}
+      </MemberPortrait>
+      <MemberIcon $instrument={instrument} aria-hidden="true">
+        <TeamIcon instrument={instrument} />
+      </MemberIcon>
+      <div>
+        <small>{role}</small>
+        <h3>{member.name}</h3>
+        <p>{member.bio?.split('|').map((line) => <span key={line}>{line}</span>)}</p>
+      </div>
+    </Member>
+  );
 }
 
 export default async function AboutPage() {
@@ -116,28 +176,7 @@ export default async function AboutPage() {
         </header>
         <MemberGrid>
           {members.map((member) => (
-            <Member key={member.id} data-zone="about-member-card">
-              <MemberPortrait
-                $hasPhoto={Boolean(member.photoUrl)}
-                aria-hidden="true"
-                data-zone="about-member-portrait"
-              >
-                {member.photoUrl ? (
-                  <Image
-                    src={toFileUrl(member.photoUrl)}
-                    alt=""
-                    fill
-                    sizes="215px"
-                  />
-                ) : null}
-              </MemberPortrait>
-              <MemberIcon aria-hidden="true"><TeamIcon role={member.part ?? ''} /></MemberIcon>
-              <div>
-                <small>{member.part}</small>
-                <h3>{member.name}</h3>
-                <p>{member.bio?.split('|').map((line) => <span key={line}>{line}</span>)}</p>
-              </div>
-            </Member>
+            <TeamMemberCard key={member.id} member={member} />
           ))}
         </MemberGrid>
       </Team>

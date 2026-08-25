@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import sharp from 'sharp';
@@ -94,5 +94,45 @@ for (const frame of FIGMA_FRAMES) {
     expect(result.actualHeight, `Rendered height must match authored ${frame.height}`).toBe(frame.height);
     expect(result.referenceWidth).toBe(frame.width);
     expect(result.referenceHeight).toBe(frame.height);
+
+    if (frame.nodeId === '153:31') {
+      expect(result.mismatchRatio, 'Full About frame must match at least 99%').toBeLessThanOrEqual(
+        0.01,
+      );
+      const card = { left: 680, top: 1665, width: 560, height: 318 };
+      const [actualCard, referenceCard] = await Promise.all([
+        sharp(actual).extract(card).png().toBuffer(),
+        sharp(reference).extract(card).png().toBuffer(),
+      ]);
+      const cardDirectory = path.join(frameDirectory, 'regions', '193-2283');
+      await mkdir(cardDirectory, { recursive: true });
+      await writeFile(path.join(cardDirectory, 'reference.png'), referenceCard);
+      const cardResult = await comparePng(
+        actualCard,
+        referenceCard,
+        cardDirectory,
+      );
+      const icon = { left: 1103, top: 1670, width: 125, height: 125 };
+      const [actualIcon, referenceIcon] = await Promise.all([
+        sharp(actual).extract(icon).png().toBuffer(),
+        sharp(reference).extract(icon).png().toBuffer(),
+      ]);
+      const iconDirectory = path.join(frameDirectory, 'regions', '193-2290');
+      await mkdir(iconDirectory, { recursive: true });
+      await writeFile(path.join(iconDirectory, 'reference.png'), referenceIcon);
+      const iconResult = await comparePng(
+        actualIcon,
+        referenceIcon,
+        iconDirectory,
+      );
+      expect(
+        cardResult.mismatchRatio,
+        'Figma node 193:2283 must match at least 99%',
+      ).toBeLessThanOrEqual(0.01);
+      expect(
+        iconResult.mismatchRatio,
+        'Figma icon node 193:2290 must match at least 99%',
+      ).toBeLessThanOrEqual(0.01);
+    }
   });
 }

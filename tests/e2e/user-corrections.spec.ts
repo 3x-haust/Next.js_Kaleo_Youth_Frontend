@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { expect, test } from '@playwright/test';
+import { PNG } from 'pngjs';
 
 const galleryPath = '/share/gallery/33333333-3333-4333-8333-333333333361';
 const setlistPath = '/jteen/setlists/44444444-4444-4444-8444-444444444441';
@@ -116,6 +117,16 @@ test('About uses exact Figma instrument exports and quote rule', async ({ page }
     expect(source).toContain(`data-figma-node="${nodeId}"`);
     expect(source).toContain('<image');
     expect(source).not.toContain('<path');
+    const embedded = source.match(/base64,([^"]+)/)?.[1];
+    expect(embedded).toBeDefined();
+    const png = PNG.sync.read(Buffer.from(embedded ?? '', 'base64'));
+    const cornerAlpha = [
+      png.data[3],
+      png.data[(png.width - 1) * 4 + 3],
+      png.data[(png.height - 1) * png.width * 4 + 3],
+      png.data[(png.height * png.width - 1) * 4 + 3],
+    ];
+    expect(cornerAlpha).toEqual([0, 0, 0, 0]);
   }
 
   await page.setViewportSize({ width: 690, height: 900 });
