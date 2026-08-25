@@ -91,7 +91,6 @@ export function SermonForm({ sermon }: { sermon?: Sermon }) {
       } else {
         const created = await clientPost<Sermon>('/sermons', payload);
         router.push(`${LIST_PATH}/${created.id}`);
-        router.refresh();
       }
     } catch (caught) {
       setFailure(errorMessage(caught));

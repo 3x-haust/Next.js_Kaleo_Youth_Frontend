@@ -120,7 +120,6 @@ export function PostForm({ post }: { post?: Post }) {
       } else {
         const created = await clientPost<Post>('/posts', payload);
         router.push(`${listPath}/${created.id}`);
-        router.refresh();
       }
     } catch (caught) {
       setFailure(errorMessage(caught));

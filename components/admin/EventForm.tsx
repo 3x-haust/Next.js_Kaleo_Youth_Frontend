@@ -87,7 +87,6 @@ export function EventForm({ event }: { event?: ChurchEvent }) {
       } else {
         const created = await clientPost<ChurchEvent>('/events', payload);
         router.push(`${LIST_PATH}/${created.id}`);
-        router.refresh();
       }
     } catch (caught) {
       setFailure(errorMessage(caught));

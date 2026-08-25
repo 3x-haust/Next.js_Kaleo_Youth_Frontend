@@ -284,13 +284,90 @@ test('existing worship member replaces photo with attachment IDs', async () => {
   await memberRow.locator('input[type="file"]').setInputFiles({ name: 'member-existing.png', mimeType: 'image/png', buffer: PNG });
   expect((await uploadRequest).postData()).toContain('worship_team_member');
   const patchRequest = page.waitForRequest((request) => request.url().includes('/api/worship-teams/members/') && request.method() === 'PATCH');
-  const refreshed = page.waitForResponse((response) => new URL(response.url()).pathname === '/admin/team' && response.request().method() === 'GET');
   await memberRow.getByRole('button', { name: '저장' }).click();
   const payload = uploadResponseSchema.parse((await patchRequest).postDataJSON());
 
   // Then
   expect(payload.attachmentIds).toEqual([uploadedId]);
-  await refreshed;
+});
+
+test('admin reorders worship members by drag without a route refresh', async () => {
+  const teamResponse = await page.request.get(
+    `${API_ORIGIN}/api/worship-teams/primary`,
+  );
+  const team = z.object({
+    id: z.string(),
+    members: z.array(z.object({ id: z.string() })).min(3),
+  }).parse(await teamResponse.json());
+  await page.route(
+    `**/api/worship-teams/${team.id}/members/order`,
+    async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({}),
+      });
+    },
+  );
+  await page.goto('/admin/team');
+  const rows = page.getByRole('heading', { name: '팀원' }).locator('..').locator('li');
+  const handles = page.getByRole('button', { name: /순서 드래그/ });
+  const before = await rows.evaluateAll((items) =>
+    items.map((item) => (item.querySelector('input') as HTMLInputElement).value),
+  );
+  await expect(rows.first().locator('input').nth(1)).toHaveValue(
+    'ELECTRIC GUITAR',
+  );
+  let routeRefreshes = 0;
+  page.on('request', (request) => {
+    if (
+      new URL(request.url()).pathname === '/admin/team'
+      && request.method() === 'GET'
+    ) {
+      routeRefreshes += 1;
+    }
+  });
+
+  const reorderRequest = page.waitForRequest(
+    (request) =>
+      new URL(request.url()).pathname
+        === `/api/worship-teams/${team.id}/members/order`
+      && request.method() === 'PATCH',
+  );
+  await rows.nth(2).scrollIntoViewIfNeeded();
+  const [sourceBox, targetBox] = await Promise.all([
+    handles.first().boundingBox(),
+    rows.nth(2).boundingBox(),
+  ]);
+  expect(sourceBox).not.toBeNull();
+  expect(targetBox).not.toBeNull();
+  await page.mouse.move(
+    (sourceBox?.x ?? 0) + (sourceBox?.width ?? 0) / 2,
+    (sourceBox?.y ?? 0) + (sourceBox?.height ?? 0) / 2,
+  );
+  await page.mouse.down();
+  await page.mouse.move(
+    (targetBox?.x ?? 0) + (targetBox?.width ?? 0) / 2,
+    (targetBox?.y ?? 0) + (targetBox?.height ?? 0) / 2,
+    { steps: 8 },
+  );
+  await page.mouse.up();
+  const after = await rows.evaluateAll((items) =>
+    items.map((item) => (item.querySelector('input') as HTMLInputElement).value),
+  );
+
+  expect(after).toEqual([before[1], before[2], before[0], ...before.slice(3)]);
+  const request = await reorderRequest;
+  const payload = z.object({
+    memberIds: z.array(z.string()).length(team.members.length),
+  }).parse(request.postDataJSON());
+  expect(payload.memberIds).toEqual([
+    team.members[1].id,
+    team.members[2].id,
+    team.members[0].id,
+    ...team.members.slice(3).map((member) => member.id),
+  ]);
+  expect(routeRefreshes).toBe(0);
 });
 
 test('new worship member submits uploaded photo attachment IDs', async () => {
@@ -298,7 +375,25 @@ test('new worship member submits uploaded photo attachment IDs', async () => {
   const uploadedId = '55555555-5555-4555-8555-555555555555';
   await mockImageUpload(page, uploadedId, 'member-new.png');
   await page.route(`${API_ORIGIN}/api/worship-teams/*/members`, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: '{}' });
+    const payload = route.request().postDataJSON() as {
+      name: string;
+      part?: string;
+      bio?: string;
+      displayOrder: number;
+    };
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        id: '66666666-6666-4666-8666-666666666666',
+        teamId: new URL(route.request().url()).pathname.split('/').at(-2),
+        name: payload.name,
+        part: payload.part ?? null,
+        bio: payload.bio ?? null,
+        photoUrl: '/uploads/member-new.webp',
+        displayOrder: payload.displayOrder,
+      }),
+    });
   });
   await page.goto('/admin/team');
 
@@ -309,11 +404,10 @@ test('new worship member submits uploaded photo attachment IDs', async () => {
   await newMemberFile.setInputFiles({ name: 'member-new.png', mimeType: 'image/png', buffer: PNG });
   expect((await uploadRequest).postData()).toContain('worship_team_member');
   const createRequest = page.waitForRequest((request) => /\/api\/worship-teams\/[^/]+\/members$/.test(request.url()) && request.method() === 'POST');
-  const refreshed = page.waitForResponse((response) => new URL(response.url()).pathname === '/admin/team' && response.request().method() === 'GET');
   await page.getByRole('button', { name: '팀원 추가' }).click();
   const payload = uploadResponseSchema.parse((await createRequest).postDataJSON());
 
   // Then
   expect(payload.attachmentIds).toEqual([uploadedId]);
-  await refreshed;
+  await expect(page.getByLabel('새 팀원 이름')).toHaveValue('새 팀원');
 });
