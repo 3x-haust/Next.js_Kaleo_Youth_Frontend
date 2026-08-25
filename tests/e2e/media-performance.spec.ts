@@ -90,4 +90,31 @@ test.describe('public media delivery', () => {
     await expect(iframe).toBeVisible();
     await expect(iframe).toHaveAttribute('src', /autoplay=1/);
   });
+
+  test('keeps the setlist controls identical on mobile', async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({
+      viewport: { width: 390, height: 844 },
+      isMobile: true,
+    });
+    const page = await context.newPage();
+
+    await page.goto(
+      '/jteen/setlists/44444444-4444-4444-8444-444444444442',
+    );
+
+    await expect(
+      page.locator('main a[href*="youtube.com/playlist?list="]'),
+    ).toHaveCount(0);
+    await expect(page.locator('main a[href="/jteen"]')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /영상 재생/ })).toHaveCount(
+      4,
+    );
+    await expect(
+      page.getByRole('link', { name: '유튜브에서 보기' }),
+    ).toHaveCount(4);
+
+    await context.close();
+  });
 });

@@ -196,34 +196,6 @@ export const Notice = styled.p`
   font-size: var(--ky-meta);
 `;
 
-export const Actions = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin-top: 28px;
-
-  a {
-    min-height: 44px;
-    padding: 8px 16px;
-    border: 1px solid rgba(247, 249, 252, 0.72);
-    font-size: var(--ky-meta);
-    line-height: 24px;
-  }
-
-  @media (min-width: 1024px) {
-    display: none;
-  }
-`;
-
-export const PrimaryAction = styled.a`
-  background: #f7f9fc;
-  color: #08081e;
-`;
-
-export const SecondaryAction = styled.a`
-  color: #f7f9fc;
-`;
-
 export const Songs = styled.div`
   margin-top: 95px;
 
@@ -303,23 +275,5 @@ export const AttachmentDownloads = styled.ul`
     flex-shrink: 0;
     color: rgba(247, 249, 252, 0.58);
     font-size: var(--ky-meta);
-  }
-`;
-
-export const BackLink = styled(Link)`
-  display: inline-flex;
-  min-height: 44px;
-  gap: 10px;
-  align-items: center;
-  margin-top: 48px;
-  color: rgba(247, 249, 252, 0.72);
-  font-size: var(--ky-table);
-
-  &:hover {
-    color: #f7f9fc;
-  }
-
-  @media (min-width: 1024px) {
-    display: none;
   }
 `;

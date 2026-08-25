@@ -9,13 +9,11 @@ import {
   formatDateWithWeekday,
   formatFileSize,
   toFileUrl,
-  youtubePlaylistUrl,
 } from '@/lib/format';
 import { SITE } from '@/lib/site';
 import type { Setlist } from '@/lib/types';
 import { Empty } from '@/styles/editorial.styled';
 import {
-  Actions,
   AttachmentCaption,
   AttachmentDownloads,
   AttachmentFigure,
@@ -23,7 +21,6 @@ import {
   AttachmentImage,
   AttachmentImageGrid,
   AttachmentSection,
-  BackLink,
   ChevronBtn,
   ChevronNav,
   DetailPage,
@@ -31,8 +28,6 @@ import {
   Hero,
   MetaQuote,
   Notice,
-  PrimaryAction,
-  SecondaryAction,
   Songs,
   SrOnly,
   Title,
@@ -135,29 +130,6 @@ export default async function SetlistDetailPage({ params }: Props) {
         </Notice>
       )}
 
-      {(setlist.youtubePlaylistId || setlist.fileUrl) && (
-        <Actions aria-label="콘티 관련 링크">
-          {setlist.youtubePlaylistId && (
-            <PrimaryAction
-              href={youtubePlaylistUrl(setlist.youtubePlaylistId)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              플레이리스트 전체 재생
-            </PrimaryAction>
-          )}
-          {setlist.fileUrl && (
-            <SecondaryAction
-              href={toFileUrl(setlist.fileUrl)}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              콘티 파일 내려받기
-            </SecondaryAction>
-          )}
-        </Actions>
-      )}
-
       {setlist.songs.length > 0 ? (
         <Songs>
           <SongList songs={setlist.songs} />
@@ -213,9 +185,6 @@ export default async function SetlistDetailPage({ params }: Props) {
         </AttachmentSection>
       ) : null}
 
-      <BackLink href="/jteen" data-visual-extra>
-        <span aria-hidden="true">←</span> 이번 주 콘티로 돌아가기
-      </BackLink>
       <PageUnderGlowClip>
         <PageUnderGlow aria-hidden="true" data-zone="page-under-glow" />
       </PageUnderGlowClip>
