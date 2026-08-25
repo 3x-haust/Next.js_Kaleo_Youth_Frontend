@@ -41,3 +41,54 @@ test('admin navigation refreshes an expired access session', async ({
     ),
   ).toBe(true);
 });
+
+test('admin shell migrates a legacy refresh cookie before access expiry', async ({
+  page,
+}) => {
+  const env = await readFile(
+    path.resolve('../kaleo_youth_backend/.env'),
+    'utf8',
+  );
+  await page.goto('/admin/login');
+  await page
+    .getByLabel('아이디')
+    .fill(envValue(env, 'SEED_SUPER_ADMIN_LOGIN_ID'));
+  await page
+    .getByLabel('비밀번호')
+    .fill(envValue(env, 'SEED_SUPER_ADMIN_PASSWORD'));
+  const initialRefresh = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/auth/refresh') && response.ok(),
+  );
+  await page.getByRole('button', { name: '로그인' }).click();
+  await expect(page).toHaveURL(/\/admin$/);
+  await initialRefresh;
+
+  const refreshCookie = (await page.context().cookies()).find(
+    (cookie) => cookie.name === 'kaleo_rt',
+  );
+  if (!refreshCookie) throw new Error('Refresh cookie was not issued.');
+  await page.context().clearCookies({ name: 'kaleo_rt' });
+  await page.context().addCookies([
+    {
+      ...refreshCookie,
+      path: '/api/auth',
+    },
+  ]);
+  await page.evaluate(() => {
+    localStorage.removeItem('kaleo-session-cookie-v1');
+  });
+
+  const migrated = page.waitForResponse(
+    (response) =>
+      response.url().endsWith('/api/auth/refresh') && response.ok(),
+  );
+  await page.reload();
+  await migrated;
+
+  expect(
+    (await page.context().cookies()).some(
+      (cookie) => cookie.name === 'kaleo_rt' && cookie.path === '/',
+    ),
+  ).toBe(true);
+});
