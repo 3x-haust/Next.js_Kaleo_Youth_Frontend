@@ -54,6 +54,19 @@ async function imageFiles() {
   }));
 }
 
+async function heicFiles() {
+  const buffer = await readFile(
+    path.resolve(
+      '../kaleo_youth_backend/src/modules/uploads/tests/fixtures/minimal.heic',
+    ),
+  );
+  return Array.from({ length: 11 }, (_, index) => ({
+    name: `IMG_${5377 + index}.HEIC`,
+    mimeType: 'image/heic',
+    buffer,
+  }));
+}
+
 function responseHeaders() {
   return {
     'access-control-allow-origin': frontendOrigin,
@@ -169,6 +182,68 @@ test('large multi-photo upload uses one optimized batch request', async ({
   );
   expect(requestBytes).toBeLessThan(
     selected.reduce((total, file) => total + file.buffer.length, 0),
+  );
+});
+
+test('eleven HEIC photos upload through three concurrent batches', async ({
+  page,
+}) => {
+  await page.goto('/admin/gallery/new');
+
+  const selected = await heicFiles();
+  let requestCount = 0;
+  const uploadedNames: string[] = [];
+  let releaseRequests!: () => void;
+  const release = new Promise<void>((resolve) => {
+    releaseRequests = resolve;
+  });
+  let allRequestsStarted!: () => void;
+  const started = new Promise<void>((resolve) => {
+    allRequestsStarted = resolve;
+  });
+
+  await page.route(`${apiOrigin}/api/uploads`, async (route) => {
+    requestCount += 1;
+    const body = route.request().postDataBuffer();
+    const names = [
+      ...(body?.toString('latin1').matchAll(/filename="([^"]+)"/g) ?? []),
+    ].map((match) => match[1]);
+    uploadedNames.push(...names);
+    if (requestCount === 3) allRequestsStarted();
+    await release;
+    await route.fulfill({
+      status: 201,
+      headers: responseHeaders(),
+      body: JSON.stringify(
+        names.map((name) => ({
+          id: `heic-batch-${name}`,
+          fileUrl: `/uploads/heic-batch-${name}.webp`,
+          originalName: name,
+          fileType: 'image/webp',
+          fileSize: '1024',
+        })),
+      ),
+    });
+  });
+
+  await page.getByLabel('사진 추가').setInputFiles(selected);
+  try {
+    await Promise.race([
+      started,
+      new Promise<never>((_, reject) => {
+        setTimeout(
+          () => reject(new Error('Three upload batches did not start')),
+          5_000,
+        );
+      }),
+    ]);
+    expect(requestCount).toBe(3);
+  } finally {
+    releaseRequests();
+  }
+  await expect(page.locator('a[href*="/uploads/heic-batch-"]')).toHaveCount(11);
+  expect(uploadedNames.sort()).toEqual(
+    selected.map((file) => file.name).sort(),
   );
 });
 

@@ -3,6 +3,7 @@
 import {
   ClientApiError,
   clientAuthPost,
+  clientDelete,
 } from '@/lib/client-api';
 import { optimizeUploadFile } from '@/lib/client-image-upload';
 
@@ -12,6 +13,8 @@ const UPLOAD_URL = `${API_ORIGIN}/api/uploads`;
 const CSRF_COOKIE = 'kaleo_csrf';
 const CSRF_HEADER = 'x-csrf-token';
 const MAX_PARALLEL_PREPARATIONS = 2;
+const UPLOAD_BATCH_SIZE = 4;
+const MAX_PARALLEL_UPLOADS = 3;
 
 export interface UploadedFile {
   readonly id: string;
@@ -194,29 +197,92 @@ export async function uploadFiles(
 
   const previewUrls = prepared.map((file) => URL.createObjectURL(file));
   const previewsReady = Promise.all(previewUrls.map(decodePreview));
-  let uploaded: UploadedFile[];
-  try {
-    uploaded = await uploadBatch(prepared, ownerType, (loaded) => {
-      let remaining = loaded;
-      for (let index = 0; index < prepared.length; index += 1) {
-        const file = prepared[index];
-        const fileLoaded = Math.min(file.size, Math.max(0, remaining));
-        remaining -= file.size;
-        progress[index] = {
-          ...progress[index],
-          loaded: fileLoaded,
-          state: fileLoaded >= file.size ? 'complete' : 'uploading',
-        };
+  const uploaded: Array<UploadedFile | undefined> = Array.from({
+    length: prepared.length,
+  });
+  const batches = Array.from(
+    { length: Math.ceil(prepared.length / UPLOAD_BATCH_SIZE) },
+    (_, batchIndex) => {
+      const start = batchIndex * UPLOAD_BATCH_SIZE;
+      return {
+        start,
+        files: prepared.slice(start, start + UPLOAD_BATCH_SIZE),
+      };
+    },
+  );
+  const batchErrors: unknown[] = [];
+  let batchCursor = 0;
+
+  async function uploadWorker() {
+    while (batchCursor < batches.length) {
+      const batch = batches[batchCursor];
+      batchCursor += 1;
+      try {
+        const result = await uploadBatch(
+          batch.files,
+          ownerType,
+          (loaded) => {
+            let remaining = loaded;
+            for (let offset = 0; offset < batch.files.length; offset += 1) {
+              const file = batch.files[offset];
+              const fileLoaded = Math.min(
+                file.size,
+                Math.max(0, remaining),
+              );
+              remaining -= file.size;
+              const index = batch.start + offset;
+              progress[index] = {
+                ...progress[index],
+                loaded: fileLoaded,
+                state: fileLoaded >= file.size ? 'complete' : 'uploading',
+              };
+            }
+            publish();
+          },
+        );
+        if (result.length !== batch.files.length) {
+          throw new ClientApiError(
+            0,
+            '업로드 결과의 사진 수가 선택한 사진 수와 다릅니다.',
+          );
+        }
+        result.forEach((file, offset) => {
+          uploaded[batch.start + offset] = file;
+        });
+      } catch (error) {
+        batchErrors.push(error);
       }
-      publish();
-    });
-  } catch (error) {
+    }
+  }
+
+  await Promise.all(
+    Array.from(
+      { length: Math.min(MAX_PARALLEL_UPLOADS, batches.length) },
+      () => uploadWorker(),
+    ),
+  );
+
+  if (batchErrors.length > 0) {
+    const cleanup = await Promise.allSettled(
+      uploaded.flatMap((file) =>
+        file ? [clientDelete(`/uploads/${file.id}`)] : [],
+      ),
+    );
     previewUrls.forEach((url) => URL.revokeObjectURL(url));
-    throw error;
+    if (cleanup.some((result) => result.status === 'rejected')) {
+      throw new ClientApiError(
+        0,
+        '업로드 실패 후 임시 파일을 정리하지 못했습니다.',
+      );
+    }
+    throw batchErrors[0];
   }
   const decodedPreviews = await previewsReady;
+  const completeUpload = uploaded.filter(
+    (file): file is UploadedFile => Boolean(file),
+  );
 
-  return uploaded.map((file, index) => ({
+  return completeUpload.map((file, index) => ({
     ...file,
     previewUrl: decodedPreviews[index],
     originalName: files[index]?.name ?? file.originalName,
