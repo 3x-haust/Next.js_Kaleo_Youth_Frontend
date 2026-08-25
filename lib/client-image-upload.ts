@@ -10,6 +10,15 @@ const CONVERTIBLE_IMAGE_TYPES = new Set([
   'image/webp',
 ]);
 
+// Browsers cannot reliably decode HEIC into a canvas. Leave it untouched so the
+// backend's local HEIF decoder can normalize it to WebP.
+const SERVER_NORMALIZED_IMAGE_TYPES = new Set([
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
+]);
+
 function webpName(name: string): string {
   const extensionStart = name.lastIndexOf('.');
   const stem = extensionStart > 0 ? name.slice(0, extensionStart) : name;
@@ -38,6 +47,7 @@ function canvasToWebp(canvas: HTMLCanvasElement): Promise<Blob> {
 }
 
 export async function optimizeUploadFile(file: File): Promise<File> {
+  if (SERVER_NORMALIZED_IMAGE_TYPES.has(file.type)) return file;
   if (!CONVERTIBLE_IMAGE_TYPES.has(file.type)) return file;
 
   let bitmap: ImageBitmap;

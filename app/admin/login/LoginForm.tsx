@@ -42,7 +42,6 @@ export function LoginForm({ next }: { next?: string }) {
       const profile = await clientAuthPost<AdminProfile>('/auth/login', parsed.data);
       setProfile(profile);
       router.replace(safeNext(next));
-      router.refresh();
     } catch (caught) {
 
       setFailure(errorMessage(caught));

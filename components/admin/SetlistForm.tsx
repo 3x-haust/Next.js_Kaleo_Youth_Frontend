@@ -251,7 +251,6 @@ export function SetlistForm({
       } else {
         const created = await clientPost<Setlist>('/setlists', payload);
         router.push(`${LIST_PATH}/${created.id}`);
-        router.refresh();
       }
     } catch (caught) {
       setFailure(errorMessage(caught));

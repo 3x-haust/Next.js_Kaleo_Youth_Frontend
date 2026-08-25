@@ -53,8 +53,11 @@ export function DeleteButton({
     try {
       await clientDelete(path);
       onDeleted?.();
-      if (redirectTo) router.push(redirectTo);
-      router.refresh();
+      if (redirectTo) {
+        router.push(redirectTo);
+      } else {
+        router.refresh();
+      }
     } catch (caught) {
       setError(errorMessage(caught));
     } finally {
@@ -77,6 +80,13 @@ const DeleteWrap = styled.span`
   align-items: center;
   gap: 10px;
 `;
+
+const HEIF_ACCEPT = '.heic,.heif,image/heic,image/heif,image/heic-sequence,image/heif-sequence';
+
+function uploadAccept(accept?: string): string | undefined {
+  if (!accept?.includes('image/')) return accept;
+  return `${accept},${HEIF_ACCEPT}`;
+}
 
 export function FileUploader({
   ownerType,
@@ -158,7 +168,7 @@ export function FileUploader({
       <input
         ref={inputRef}
         type="file"
-        accept={accept}
+        accept={uploadAccept(accept)}
         multiple={multiple}
         aria-label={label}
         onChange={pick}

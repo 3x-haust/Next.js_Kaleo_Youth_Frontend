@@ -11,9 +11,8 @@ export const metadata: Metadata = { title: '대시보드' };
 const EMPTY = { items: [], total: 0, page: 1, limit: 5, totalPages: 1 };
 
 export default async function AdminDashboardPage() {
-  const admin = await requireAdmin();
-
-  const [gallery, sermons, events, setlists, logs] = await Promise.all([
+  const [admin, gallery, sermons, events, setlists, logs] = await Promise.all([
+    requireAdmin(),
     apiGetSafe<PaginatedResult<Post>>('/posts', EMPTY, {
       authed: true,
       query: { boardType: 'gallery', limit: 1 },

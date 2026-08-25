@@ -18,8 +18,16 @@ interface Props {
 
 type UploadKind = 'image' | 'document';
 
-const PHOTO_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
-const PHOTO_ACCEPT = PHOTO_MIME_TYPES.join(',');
+const PHOTO_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
+] as const;
+const PHOTO_ACCEPT = `.heic,.heif,${PHOTO_MIME_TYPES.join(',')}`;
 
 function isSupportedPhotoType(fileType: string | null): boolean {
   return fileType !== null && PHOTO_MIME_TYPES.some((supported) => supported === fileType);
@@ -90,7 +98,7 @@ export function SetlistAttachmentsField({
     <AttachmentFields>
       <Field>
         <SectionTitle>콘티 사진</SectionTitle>
-        <Hint>PNG, JPG, WEBP 이미지를 순서대로 올리면 사이트 콘티 상세에 모두 표시됩니다.</Hint>
+        <Hint>PNG, JPG, WEBP, HEIC 이미지를 순서대로 올리면 사이트 콘티 상세에 모두 표시됩니다.</Hint>
         <input
           ref={imageInput}
           type="file"
