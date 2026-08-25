@@ -66,4 +66,28 @@ test.describe('public media delivery', () => {
       await expect(footerImages.nth(index)).toHaveAttribute('loading', 'lazy');
     }
   });
+
+  test('plays setlist videos inline while keeping the YouTube fallback', async ({
+    page,
+  }) => {
+    await page.goto(
+      '/jteen/setlists/44444444-4444-4444-8444-444444444442',
+    );
+    const player = page.getByRole('button', { name: /영상 재생/ }).first();
+    const fallback = page
+      .getByRole('link', { name: '유튜브에서 보기' })
+      .first();
+
+    await expect(player).toBeVisible();
+    await expect(fallback).toBeVisible();
+    await expect(fallback).toHaveAttribute(
+      'href',
+      /^https:\/\/www\.youtube\.com\/watch\?v=/,
+    );
+    await player.click();
+
+    const iframe = page.locator('iframe').first();
+    await expect(iframe).toBeVisible();
+    await expect(iframe).toHaveAttribute('src', /autoplay=1/);
+  });
 });
