@@ -46,6 +46,25 @@ test('closing divider uses long directional gradient lines', async ({ page }) =>
   }
 });
 
+test('closing top divider begins at the Figma media boundary', async ({
+  page,
+}) => {
+  const closing = page.getByRole('region', { name: '함께 드리는 예배' });
+  const line = closing.locator('[data-zone="page-under-glow"]');
+  const clip = line.locator('..');
+  const [closingBox, clipBox] = await Promise.all([
+    closing.boundingBox(),
+    clip.boundingBox(),
+  ]);
+
+  expect(closingBox).not.toBeNull();
+  expect(clipBox).not.toBeNull();
+  expect(Math.abs((clipBox?.x ?? 0) - (closingBox?.x ?? 0) - 1220)).toBeLessThanOrEqual(1);
+  expect(Math.abs((clipBox?.width ?? 0) - 700)).toBeLessThanOrEqual(1);
+  await expect(line).toHaveCSS('background-image', 'none');
+  await expect(line).toHaveCSS('background-color', 'rgb(59, 130, 246)');
+});
+
 test('leader portrait uses the Figma card corner and border', async ({ page }) => {
   const portrait = page.locator('[data-zone="about-leader"] > div').first();
 

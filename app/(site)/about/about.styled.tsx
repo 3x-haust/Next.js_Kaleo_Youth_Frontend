@@ -1,6 +1,10 @@
 'use client';
 
 import styled from 'styled-components';
+import {
+  PageUnderGlow,
+  PageUnderGlowClip,
+} from '@/components/ui/primitives';
 
 const frame = (px: number) => {
   const at1024 = px * 1024 / 1920;
@@ -834,6 +838,19 @@ export const Closing = styled.section`
     height: auto;
     min-height: unset;
     height: 360px;
+  }
+`;
+
+export const ClosingUnderGlowClip = styled(PageUnderGlowClip)`
+  @media (min-width: 1024px) {
+    left: ${frame(1220)};
+    width: ${frame(700)};
+
+    ${PageUnderGlow} {
+      left: 0;
+      width: 100%;
+      background: #3b82f6;
+    }
   }
 `;
 

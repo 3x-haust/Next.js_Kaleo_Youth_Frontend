@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import { Fragment } from 'react';
 import { Reveal } from '@/components/motion/Motion';
-import { PageUnderGlow, PageUnderGlowClip } from '@/components/ui/primitives';
+import { PageUnderGlow } from '@/components/ui/primitives';
 import { apiGet } from '@/lib/api';
 import { toFileUrl } from '@/lib/format';
 import type {
@@ -16,6 +16,7 @@ import {
   ClosingCopy,
   ClosingDivider,
   ClosingMedia,
+  ClosingUnderGlowClip,
   Eyebrow,
   Intro,
   IntroCopy,
@@ -182,9 +183,9 @@ export default async function AboutPage() {
       </Team>
 
       <Closing aria-label={about.closingPhotoLabel}>
-        <PageUnderGlowClip $top={0}>
+        <ClosingUnderGlowClip $top={0}>
           <PageUnderGlow aria-hidden="true" data-zone="page-under-glow" />
-        </PageUnderGlowClip>
+        </ClosingUnderGlowClip>
         <ClosingMedia aria-hidden="true">
           {about.closingPhotoUrl ? <Image src={toFileUrl(about.closingPhotoUrl)} alt="" fill sizes="(max-width: 1023px) 100vw, 1220px" /> : null}
         </ClosingMedia>
