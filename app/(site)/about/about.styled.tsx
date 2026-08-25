@@ -191,6 +191,16 @@ export const ValueIcon = styled.span`
   color: #1677ff;
   font-size: 34px;
 
+  svg {
+    width: 58px;
+    height: 58px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 4;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
   @media (min-width: 1024px) {
     position: relative;
     margin: 0 auto ${frame(15)};

@@ -73,6 +73,17 @@ test('mobile leader copy avoids Korean orphan fragments', async ({ page }) => {
   }
 });
 
+test('mobile value glyphs keep visible blue outline strokes', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  const glyphs = page.locator('section[aria-labelledby="about-heading"] article svg');
+
+  await expect(glyphs).toHaveCount(3);
+  for (const glyph of await glyphs.all()) {
+    await expect(glyph).toHaveCSS('fill', 'none');
+    await expect(glyph).toHaveCSS('stroke', 'rgb(22, 119, 255)');
+  }
+});
+
 test('tablet closing sentence preserves a visible inter-span gap', async ({ page }) => {
   await page.setViewportSize({ width: 768, height: 1024 });
   const statement = page.locator('[data-zone="about-closing-statement"]');
