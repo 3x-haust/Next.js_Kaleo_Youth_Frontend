@@ -16,6 +16,12 @@ for (const frame of FIGMA_FRAMES) {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const liveRoute = liveFigmaRoute(frame.nodeId);
     await page.goto(liveRoute, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => {
+      const route = document.querySelector<HTMLElement>('[data-reduced-motion="true"]');
+      if (!route) return false;
+      const styles = getComputedStyle(route);
+      return styles.opacity === '1' && styles.transform === 'none';
+    });
     await page.evaluate(async () => {
       await document.fonts.ready;
       for (const image of document.images) {
@@ -55,12 +61,6 @@ for (const frame of FIGMA_FRAMES) {
       },
       { width: 1920 },
     );
-    await page.waitForFunction(() => {
-      const route = document.querySelector<HTMLElement>('[data-reduced-motion="true"]');
-      if (!route) return false;
-      const styles = getComputedStyle(route);
-      return styles.opacity === '1' && styles.transform === 'none';
-    });
     await page.evaluate(() => new Promise<void>((resolve) => {
       requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
     }));

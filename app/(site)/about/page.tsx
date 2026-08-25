@@ -182,6 +182,9 @@ export default async function AboutPage() {
       </Team>
 
       <Closing aria-label={about.closingPhotoLabel}>
+        <PageUnderGlowClip $top={0}>
+          <PageUnderGlow aria-hidden="true" data-zone="page-under-glow" />
+        </PageUnderGlowClip>
         <ClosingMedia aria-hidden="true">
           {about.closingPhotoUrl ? <Image src={toFileUrl(about.closingPhotoUrl)} alt="" fill sizes="(max-width: 1023px) 100vw, 1220px" /> : null}
         </ClosingMedia>
@@ -194,9 +197,6 @@ export default async function AboutPage() {
           </ClosingDivider>
         </ClosingCopy>
       </Closing>
-      <PageUnderGlowClip $top={2827}>
-        <PageUnderGlow aria-hidden="true" data-zone="page-under-glow" />
-      </PageUnderGlowClip>
     </Page>
   );
 }
