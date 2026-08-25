@@ -67,3 +67,50 @@ test('contains every member card before the closing section at tablet width', as
   expect(geometry.closingGap).toBeGreaterThanOrEqual(20);
   expect(geometry.horizontalOverflow).toBeLessThanOrEqual(1);
 });
+
+test('aligns the desktop underglow with a dynamically shifted closing section', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1920, height: 1080 });
+  await page.goto('/about');
+  await page.waitForFunction(() => {
+    const route = document.querySelector<HTMLElement>('[data-reduced-motion="true"]');
+    if (!route) return false;
+    const styles = getComputedStyle(route);
+    return styles.opacity === '1' && styles.transform === 'none';
+  });
+
+  const geometry = await page.evaluate(() => {
+    const team = document.querySelector<HTMLElement>('section[aria-labelledby="team-title"]');
+    const grid = team?.querySelector<HTMLElement>('[data-zone="about-member-card"]')
+      ?.parentElement;
+    const closing = team?.nextElementSibling;
+    const pageSurface = team?.parentElement;
+    const glow = document.querySelector<HTMLElement>('[data-zone="page-under-glow"]');
+    const glowClip = glow?.parentElement;
+    if (
+      !grid
+      || !(closing instanceof HTMLElement)
+      || !pageSurface
+      || !glowClip
+    ) {
+      throw new Error('About underglow contract is incomplete');
+    }
+
+    grid.style.height = '1900px';
+    const pageBox = pageSurface.getBoundingClientRect();
+    const closingBox = closing.getBoundingClientRect();
+    const glowBox = glowClip.getBoundingClientRect();
+    const ambientHeight = Number.parseFloat(
+      getComputedStyle(pageSurface, '::before').height,
+    );
+    return {
+      glowOffset: glowBox.top - closingBox.top,
+      ambientOffset: pageBox.top + ambientHeight - closingBox.top,
+    };
+  });
+
+  expect(Math.abs(geometry.glowOffset)).toBeLessThanOrEqual(1);
+  expect(Math.abs(geometry.ambientOffset)).toBeLessThanOrEqual(1);
+});

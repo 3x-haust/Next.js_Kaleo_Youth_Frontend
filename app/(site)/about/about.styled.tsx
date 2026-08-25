@@ -43,7 +43,8 @@ export const Page = styled.div`
       #000 0,
       #000 ${frame(1360)},
       #07071d ${frame(2830)},
-      #000 ${frame(2830)}
+      #07071d calc(100% - ${frame(460)}),
+      #000 calc(100% - ${frame(460)})
     );
 
     &::before {
@@ -51,7 +52,7 @@ export const Page = styled.div`
       right: auto;
       left: 0;
       width: ${frame(1920)};
-      height: ${frame(2830)};
+      height: calc(100% - ${frame(460)});
       background:
         radial-gradient(
           ellipse ${frame(300)} ${frame(500)} at ${frame(24)} ${frame(795)},
