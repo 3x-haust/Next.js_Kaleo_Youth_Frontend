@@ -21,6 +21,7 @@ const MENU = [
 ] as const;
 
 const SUPER_MENU = [{ href: '/admin/accounts', label: '관리자 계정' }] as const;
+const SESSION_COOKIE_MIGRATION = 'kaleo-session-cookie-v1';
 
 export function AdminShell({
   admin,
@@ -39,6 +40,15 @@ export function AdminShell({
   useEffect(() => {
     setProfile(admin);
   }, [admin, setProfile]);
+
+  useEffect(() => {
+    if (localStorage.getItem(SESSION_COOKIE_MIGRATION)) return;
+    localStorage.setItem(SESSION_COOKIE_MIGRATION, 'pending');
+    void clientAuthPost('/auth/refresh').catch((error: unknown) => {
+      localStorage.removeItem(SESSION_COOKIE_MIGRATION);
+      console.error(errorMessage(error));
+    });
+  }, []);
 
   const menu = admin.isSuperAdmin ? [...MENU, ...SUPER_MENU] : MENU;
 
