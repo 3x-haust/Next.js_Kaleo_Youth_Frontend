@@ -56,7 +56,7 @@ export async function optimizeUploadFile(file: File): Promise<File> {
       imageOrientation: 'from-image',
     });
   } catch {
-    throw new ClientApiError(0, `${file.name} 사진을 읽지 못했습니다.`);
+    return file;
   }
 
   try {

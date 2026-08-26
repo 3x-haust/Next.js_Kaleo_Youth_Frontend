@@ -13,6 +13,7 @@ import {
   type UploadedFile,
 } from '@/lib/client-upload';
 import { formatFileSize, toFileUrl } from '@/lib/format';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import { ErrorText, Hint } from './parts';
 
 export function FormError({ message }: { message: string | null }) {
@@ -34,12 +35,14 @@ export function DeleteButton({
   label = '삭제',
   confirmMessage,
   redirectTo,
+  successMessage,
   onDeleted,
 }: {
   path: string;
   label?: string;
   confirmMessage: string;
   redirectTo?: string;
+  successMessage?: string;
   onDeleted?: () => void;
 }) {
   const router = useRouter();
@@ -48,10 +51,14 @@ export function DeleteButton({
 
   async function remove() {
     if (!window.confirm(confirmMessage)) return;
+    clearAdminFlash();
     setPending(true);
     setError(null);
     try {
       await clientDelete(path);
+      if (successMessage) {
+        showAdminFlash(successMessage, Boolean(redirectTo));
+      }
       onDeleted?.();
       if (redirectTo) {
         router.push(redirectTo);

@@ -13,6 +13,7 @@ import { uploadFiles } from '@/lib/client-upload';
 import { youtubeWatchUrl } from '@/lib/format';
 import { fieldErrors, playlistUrlSchema, setlistSchema } from '@/lib/schemas';
 import type { PlaylistImportResult, Setlist, SetlistAttachment } from '@/lib/types';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import {
   Actions,
   ErrorText,
@@ -185,8 +186,10 @@ export function SetlistForm({
     if (!window.confirm('플레이리스트를 다시 불러와 곡 목록을 덮어씁니다. 계속할까요?')) return;
     setResyncing(true);
     setFailure(null);
+    clearAdminFlash();
     try {
       await clientPost(`/setlists/${setlist.id}/resync`, {});
+      showAdminFlash('플레이리스트를 다시 불러왔습니다.');
       router.refresh();
     } catch (caught) {
       setFailure(errorMessage(caught));
@@ -207,6 +210,7 @@ export function SetlistForm({
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setFailure(null);
+    clearAdminFlash();
 
     const parsed = setlistSchema.safeParse({
       serviceDate,
@@ -247,10 +251,12 @@ export function SetlistForm({
     try {
       if (setlist) {
         await clientPatch(`/setlists/${setlist.id}`, payload);
+        showAdminFlash('변경사항을 저장했습니다.');
         router.refresh();
       } else {
-        const created = await clientPost<Setlist>('/setlists', payload);
-        router.push(`${LIST_PATH}/${created.id}`);
+        await clientPost<Setlist>('/setlists', payload);
+        showAdminFlash('콘티를 등록했습니다.', true);
+        router.push(LIST_PATH);
       }
     } catch (caught) {
       setFailure(errorMessage(caught));
@@ -482,6 +488,7 @@ export function SetlistForm({
             path={`/setlists/${setlist.id}`}
             confirmMessage="이 콘티를 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"
             redirectTo={LIST_PATH}
+            successMessage="콘티를 삭제했습니다."
           />
         ) : null}
       </Actions>

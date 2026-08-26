@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import styled from 'styled-components';
+import { Notice } from '@/components/ui/primitives';
 import { clientAuthPost, errorMessage } from '@/lib/client-api';
 import { SITE } from '@/lib/site';
 import type { AdminProfile } from '@/lib/types';
+import { clearAdminFlash, useAdminFlash } from '@/store/admin-flash';
 import { useAdminSession } from '@/store/admin-session';
 
 const MENU = [
@@ -34,6 +36,15 @@ export function AdminShell({
   const router = useRouter();
   const setProfile = useAdminSession((state) => state.setProfile);
   const clear = useAdminSession((state) => state.clear);
+  const flashMessage = useAdminFlash((state) => state.message);
+  const remainingNavigations = useAdminFlash(
+    (state) => state.remainingNavigations,
+  );
+  const consumeFlashNavigation = useAdminFlash(
+    (state) => state.consumeNavigation,
+  );
+  const clearFlash = useAdminFlash((state) => state.clear);
+  const previousPath = useRef(pathname);
   const [pending, setPending] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -50,6 +61,23 @@ export function AdminShell({
     });
   }, []);
 
+  useEffect(() => {
+    if (previousPath.current === pathname) return;
+    previousPath.current = pathname;
+    if (!flashMessage) return;
+    if (remainingNavigations > 0) {
+      consumeFlashNavigation();
+      return;
+    }
+    clearFlash();
+  }, [
+    pathname,
+    flashMessage,
+    remainingNavigations,
+    consumeFlashNavigation,
+    clearFlash,
+  ]);
+
   const menu = admin.isSuperAdmin ? [...MENU, ...SUPER_MENU] : MENU;
 
   const isActive = (href: string, exact?: boolean) =>
@@ -62,6 +90,7 @@ export function AdminShell({
     } catch (error) {
       console.error(errorMessage(error));
     } finally {
+      clearAdminFlash();
       clear();
       setPending(false);
       router.replace('/admin/login');
@@ -126,7 +155,22 @@ export function AdminShell({
             </MobileActions>
           </nav>
         </Side>
-        <Main>{children}</Main>
+        <Main>
+          <FlashNotice
+            $visible={Boolean(flashMessage)}
+            role="status"
+            aria-live="polite"
+            aria-atomic="true"
+          >
+            <span>{flashMessage ?? ''}</span>
+            {flashMessage ? (
+              <FlashDismiss type="button" onClick={clearFlash}>
+                닫기
+              </FlashDismiss>
+            ) : null}
+          </FlashNotice>
+          {children}
+        </Main>
       </Body>
     </Layout>
   );
@@ -326,4 +370,36 @@ const SideAction = styled.button`
 
 const Main = styled.main`
   min-width: 0;
+`;
+
+const FlashNotice = styled(Notice)<{ $visible: boolean }>`
+  position: ${({ $visible }) => ($visible ? 'static' : 'absolute')};
+  width: ${({ $visible }) => ($visible ? 'auto' : '1px')};
+  height: ${({ $visible }) => ($visible ? 'auto' : '1px')};
+  padding: ${({ $visible }) => ($visible ? '14px 18px' : '0')};
+  margin: ${({ $visible }) => ($visible ? '0 0 16px' : '0')};
+  overflow: ${({ $visible }) => ($visible ? 'visible' : 'hidden')};
+  clip-path: ${({ $visible }) => ($visible ? 'none' : 'inset(50%)')};
+  white-space: ${({ $visible }) => ($visible ? 'normal' : 'nowrap')};
+  border-width: ${({ $visible }) => ($visible ? '1px' : '0')};
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+`;
+
+const FlashDismiss = styled.button`
+  flex: 0 0 auto;
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid currentColor;
+  border-radius: ${({ theme }) => theme.radius.pill};
+  padding: 0 14px;
+  color: inherit;
+  font-size: 13px;
+  font-weight: 700;
 `;

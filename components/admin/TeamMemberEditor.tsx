@@ -7,6 +7,7 @@ import { clientDelete, clientPatch, clientPost, errorMessage } from '@/lib/clien
 import type { UploadedFile } from '@/lib/client-upload';
 import { fieldErrors, memberSchema } from '@/lib/schemas';
 import type { WorshipTeam, WorshipTeamMember } from '@/lib/types';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import { Actions, ErrorText, Field, FieldRow, Form, Hint, Input, Label } from './parts';
 import { TeamMemberRow, type MemberPatch } from './TeamMemberRow';
 import { FileUploader, FormError } from './widgets';
@@ -34,6 +35,7 @@ export function TeamMemberEditor({ team }: { readonly team: WorshipTeam }) {
   async function addMember(event: React.FormEvent) {
     event.preventDefault();
     setFailure(null);
+    clearAdminFlash();
     const parsed = memberSchema.safeParse({
       name: newName,
       part: newPart,
@@ -60,6 +62,7 @@ export function TeamMemberEditor({ team }: { readonly team: WorshipTeam }) {
       setNewPart('');
       setNewBio('');
       setNewPhoto([]);
+      showAdminFlash('팀원을 추가했습니다.');
     } catch (caught) {
       setFailure(errorMessage(caught));
     } finally {
@@ -69,6 +72,7 @@ export function TeamMemberEditor({ team }: { readonly team: WorshipTeam }) {
 
   async function saveMember(member: WorshipTeamMember, patch: MemberPatch) {
     setFailure(null);
+    clearAdminFlash();
     setBusy(true);
     try {
       const saved = await clientPatch<WorshipTeamMember>(
@@ -80,6 +84,7 @@ export function TeamMemberEditor({ team }: { readonly team: WorshipTeam }) {
           current.id === member.id ? { ...current, ...saved } : current,
         ),
       );
+      showAdminFlash(`${saved.name} 팀원 정보를 저장했습니다.`);
     } catch (caught) {
       setFailure(errorMessage(caught));
     } finally {
@@ -90,12 +95,14 @@ export function TeamMemberEditor({ team }: { readonly team: WorshipTeam }) {
   async function removeMember(member: WorshipTeamMember) {
     if (!window.confirm(`${member.name} 팀원을 삭제합니다. 계속할까요?`)) return;
     setFailure(null);
+    clearAdminFlash();
     setBusy(true);
     try {
       await clientDelete(`/worship-teams/members/${member.id}`);
       updateMembers(
         currentMembers.current.filter((current) => current.id !== member.id),
       );
+      showAdminFlash(`${member.name} 팀원을 삭제했습니다.`);
     } catch (caught) {
       setFailure(errorMessage(caught));
     } finally {
@@ -107,10 +114,12 @@ export function TeamMemberEditor({ team }: { readonly team: WorshipTeam }) {
     if (next.every((member, index) => member.id === previous[index]?.id)) return;
     setBusy(true);
     setFailure(null);
+    clearAdminFlash();
     try {
       await clientPatch(`/worship-teams/${team.id}/members/order`, {
         memberIds: next.map((member) => member.id),
       });
+      showAdminFlash('팀원 순서를 저장했습니다.');
     } catch (caught) {
       updateMembers(previous);
       setFailure(errorMessage(caught));

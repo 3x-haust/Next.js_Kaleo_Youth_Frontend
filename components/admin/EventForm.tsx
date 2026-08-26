@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/primitives';
 import { clientPatch, clientPost, errorMessage } from '@/lib/client-api';
 import { fieldErrors, eventSchema } from '@/lib/schemas';
 import type { ChurchEvent } from '@/lib/types';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import {
   Actions,
   ErrorText,
@@ -45,6 +46,7 @@ export function EventForm({ event }: { event?: ChurchEvent }) {
   async function submit(formEvent: React.FormEvent) {
     formEvent.preventDefault();
     setFailure(null);
+    clearAdminFlash();
 
     const parsed = eventSchema.safeParse({
       title,
@@ -83,10 +85,12 @@ export function EventForm({ event }: { event?: ChurchEvent }) {
     try {
       if (event) {
         await clientPatch(`/events/${event.id}`, payload);
+        showAdminFlash('변경사항을 저장했습니다.');
         router.refresh();
       } else {
-        const created = await clientPost<ChurchEvent>('/events', payload);
-        router.push(`${LIST_PATH}/${created.id}`);
+        await clientPost<ChurchEvent>('/events', payload);
+        showAdminFlash('일정을 등록했습니다.', true);
+        router.push(LIST_PATH);
       }
     } catch (caught) {
       setFailure(errorMessage(caught));
@@ -217,6 +221,7 @@ export function EventForm({ event }: { event?: ChurchEvent }) {
             path={`/events/${event.id}`}
             confirmMessage="이 일정을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"
             redirectTo={LIST_PATH}
+            successMessage="일정을 삭제했습니다."
           />
         ) : null}
       </Actions>

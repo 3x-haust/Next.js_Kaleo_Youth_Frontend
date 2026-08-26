@@ -7,6 +7,7 @@ import { clientDelete, clientPatch, clientPost, errorMessage } from '@/lib/clien
 import type { UploadedFile } from '@/lib/client-upload';
 import { fieldErrors, postSchema } from '@/lib/schemas';
 import type { Post } from '@/lib/types';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import {
   Actions,
   ErrorText,
@@ -79,6 +80,7 @@ export function PostForm({ post }: { post?: Post }) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setFailure(null);
+    clearAdminFlash();
 
     const parsed = postSchema.safeParse({
       boardType: 'gallery',
@@ -116,10 +118,12 @@ export function PostForm({ post }: { post?: Post }) {
       if (post) {
         await clientPatch(`/posts/${post.id}`, payload);
         setUploaded([]);
+        showAdminFlash('변경사항을 저장했습니다.');
         router.refresh();
       } else {
-        const created = await clientPost<Post>('/posts', payload);
-        router.push(`${listPath}/${created.id}`);
+        await clientPost<Post>('/posts', payload);
+        showAdminFlash('갤러리를 등록했습니다.', true);
+        router.push(listPath);
       }
     } catch (caught) {
       setFailure(errorMessage(caught));
@@ -252,6 +256,7 @@ export function PostForm({ post }: { post?: Post }) {
             path={`/posts/${post.id}`}
             confirmMessage="이 글과 첨부파일을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"
             redirectTo={listPath}
+            successMessage="갤러리를 삭제했습니다."
           />
         ) : null}
       </Actions>

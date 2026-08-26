@@ -16,6 +16,7 @@ const MAX_PARALLEL_PREPARATIONS = 2;
 const UPLOAD_BATCH_SIZE = 4;
 const MAX_PARALLEL_UPLOADS = 3;
 const SERVER_NORMALIZED_BATCH_SIZE = 3;
+const UPLOAD_RESPONSE_TIMEOUT_MS = 115_000;
 const SERVER_NORMALIZED_IMAGE_TYPES = new Set([
   'image/heic',
   'image/heif',
@@ -108,6 +109,7 @@ async function uploadBatch(
     request.open('POST', UPLOAD_URL);
     request.withCredentials = true;
     request.responseType = 'json';
+    request.timeout = UPLOAD_RESPONSE_TIMEOUT_MS;
     const csrfToken = readCookie(CSRF_COOKIE);
     if (csrfToken) request.setRequestHeader(CSRF_HEADER, csrfToken);
 
@@ -122,6 +124,17 @@ async function uploadBatch(
     };
     request.onerror = () => {
       reject(new ClientApiError(0, '업로드 연결이 끊어졌습니다.'));
+    };
+    request.ontimeout = () => {
+      reject(
+        new ClientApiError(
+          0,
+          '사진 변환 시간이 초과되었습니다. 다시 시도해 주세요.',
+        ),
+      );
+    };
+    request.onabort = () => {
+      reject(new ClientApiError(0, '사진 업로드가 중단되었습니다.'));
     };
     request.onload = async () => {
       if (request.status === 401 && canRetry) {
@@ -282,6 +295,7 @@ export async function uploadFiles(
         publish();
       } catch (error) {
         batchErrors.push(error);
+        if (containsServerNormalizedImage) return;
       }
     }
   }
