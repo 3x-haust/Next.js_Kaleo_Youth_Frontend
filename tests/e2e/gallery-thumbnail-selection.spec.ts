@@ -30,7 +30,11 @@ async function login(page: Page): Promise<void> {
     },
     headers: { origin: 'http://localhost:3000', 'x-csrf-token': csrfBody.csrfToken },
   });
-  expect(response.status()).toBe(200);
+  if (response.status() !== 200) {
+    throw new Error(
+      `Gallery admin login failed with ${response.status()}: ${await response.text()}`,
+    );
+  }
 }
 
 let context: BrowserContext;
@@ -73,7 +77,15 @@ test('new gallery defaults to the first of an unrestricted photo selection and s
     fileSize: '68',
   }));
   await page.route(`${API_ORIGIN}/api/uploads`, async (route) => {
-    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(uploaded) });
+    const body = route.request().postDataBuffer()?.toString('latin1') ?? '';
+    const indexes = [
+      ...body.matchAll(/filename="gallery-(\d+)\.(?:png|webp)"/g),
+    ].map((match) => Number(match[1]) - 1);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(indexes.map((index) => uploaded[index])),
+    });
   });
   await page.route(`${API_ORIGIN}/api/posts`, async (route) => {
     if (route.request().method() === 'POST') {
@@ -104,7 +116,24 @@ test('new gallery defaults to the first of an unrestricted photo selection and s
     { name: 'desktop', width: 1280, height: 900 },
   ] as const) {
     await page.setViewportSize(viewport);
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    const overflow = await page.evaluate(() =>
+      [...document.querySelectorAll<HTMLElement>('body *')]
+        .filter((element) => {
+          const rect = element.getBoundingClientRect();
+          return (
+            rect.width > 0 &&
+            rect.height > 0 &&
+            (rect.left < -1 || rect.right > window.innerWidth + 1)
+          );
+        })
+        .map((element) => ({
+          tag: element.tagName,
+          text: element.textContent?.trim().slice(0, 80),
+          left: element.getBoundingClientRect().left,
+          right: element.getBoundingClientRect().right,
+        })),
+    );
+    expect(overflow).toEqual([]);
     await page.screenshot({
       path: `.omo/evidence/gallery-thumbnail-selection/new-${viewport.name}.png`,
       fullPage: true,
@@ -120,9 +149,15 @@ test('new gallery defaults to the first of an unrestricted photo selection and s
   await expect(endDate).not.toHaveAttribute('min');
   await startDate.fill('2024-07-20');
   await endDate.fill('2024-07-22');
-  const createRequest = page.waitForRequest((request) => request.url() === `${API_ORIGIN}/api/posts` && request.method() === 'POST');
+  const createPayload = page
+    .waitForRequest(
+      (request) =>
+        request.url() === `${API_ORIGIN}/api/posts` &&
+        request.method() === 'POST',
+    )
+    .then((request) => postPayloadSchema.parse(request.postDataJSON()));
   await page.getByRole('button', { name: '갤러리 등록' }).click();
-  const payload = postPayloadSchema.parse((await createRequest).postDataJSON());
+  const payload = await createPayload;
 
   // Then
   expect(payload.attachmentIds).toEqual(uploaded.map((file) => file.id));

@@ -242,6 +242,7 @@ test.afterAll(async () => {
 
 test('admin retains existing attachments, previews PNG uploads, and maps ordered attachmentIds', async ({ page }) => {
   let resolvePatch: ((body: unknown) => void) | undefined;
+  let uploadBody: string | null = null;
   const patchSeen = new Promise<unknown>((resolve) => {
     resolvePatch = resolve;
   });
@@ -251,13 +252,12 @@ test('admin retains existing attachments, previews PNG uploads, and maps ordered
       await route.fulfill({ status: 204, headers: corsHeaders() });
       return;
     }
-    expect(request.postData()).toContain('name="ownerType"\r\n\r\nsetlist');
-    expect(request.postData()).toContain('uploaded.png');
+    uploadBody = request.postData();
     await fulfillCors(route, [{
       id: 'uploaded-image',
-      fileUrl: '/uploads/uploaded.png',
-      originalName: 'uploaded.png',
-      fileType: 'image/png',
+      fileUrl: '/uploads/uploaded.webp',
+      originalName: 'uploaded.webp',
+      fileType: 'image/webp',
       fileSize: String(png.byteLength),
     }]);
   });
@@ -280,6 +280,8 @@ test('admin retains existing attachments, previews PNG uploads, and maps ordered
     buffer: png,
   });
   await expect(page.locator('[data-zone="setlist-admin-image"]')).toHaveCount(3);
+  expect(uploadBody).toContain('name="ownerType"\r\n\r\nsetlist');
+  expect(uploadBody).toContain('uploaded.webp');
   await page.getByRole('button', { name: 'existing-two.png 제거' }).click();
   await page.screenshot({ path: path.join(evidence, 'admin-preview-green.png'), fullPage: true });
   await page.getByRole('button', { name: '저장', exact: true }).click();

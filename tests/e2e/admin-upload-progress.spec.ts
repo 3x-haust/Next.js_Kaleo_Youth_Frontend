@@ -237,6 +237,26 @@ test('eleven HEIC photos upload through sequential bounded batches', async ({
   );
 });
 
+test('HEIC upload stops after the first failed conversion batch', async ({
+  page,
+}) => {
+  await page.goto('/admin/gallery/new');
+
+  let requestCount = 0;
+  await page.route(`${apiOrigin}/api/uploads`, async (route) => {
+    requestCount += 1;
+    await route.fulfill({
+      status: 503,
+      headers: responseHeaders(),
+      body: JSON.stringify({ message: '사진 변환 실패' }),
+    });
+  });
+
+  await page.getByLabel('사진 추가').setInputFiles(await heicFiles());
+  await expect(page.getByText('사진 변환 실패', { exact: true })).toBeVisible();
+  expect(requestCount).toBe(1);
+});
+
 test('uploaded photos use decoded local previews', async ({ page }) => {
   await page.goto('/admin/gallery/new');
 

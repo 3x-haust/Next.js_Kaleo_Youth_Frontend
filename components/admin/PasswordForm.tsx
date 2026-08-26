@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/primitives';
 import { clientPatch, errorMessage } from '@/lib/client-api';
 import { changePasswordSchema, fieldErrors, PASSWORD_MESSAGE } from '@/lib/schemas';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import { Actions, ErrorText, Field, Form, Hint, Input, Label } from './parts';
-import { FormError, SavedNotice } from './widgets';
+import { FormError } from './widgets';
 
 export function PasswordForm() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -14,13 +15,12 @@ export function PasswordForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setFailure(null);
-    setSaved(false);
+    clearAdminFlash();
 
     const parsed = changePasswordSchema.safeParse({
       currentPassword,
@@ -43,7 +43,7 @@ export function PasswordForm() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      setSaved(true);
+      showAdminFlash('비밀번호를 변경했습니다.');
     } catch (caught) {
       setFailure(errorMessage(caught));
     } finally {
@@ -54,7 +54,6 @@ export function PasswordForm() {
   return (
     <Form onSubmit={submit} noValidate>
       <FormError message={failure} />
-      <SavedNotice message={saved ? '비밀번호를 변경했습니다.' : null} />
 
       <Field>
         <Label htmlFor="currentPassword">

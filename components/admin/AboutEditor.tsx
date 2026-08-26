@@ -6,9 +6,10 @@ import { clientPatch, errorMessage } from '@/lib/client-api';
 import type { UploadedFile } from '@/lib/client-upload';
 import { aboutSchema, fieldErrors, type AboutInput } from '@/lib/schemas';
 import type { AboutPage } from '@/lib/types';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import { existingImage } from './image-upload';
 import { Actions, ErrorText, Field, FieldRow, Form, Input, Label, Panel, PanelTitle, Textarea } from './parts';
-import { FileUploader, FormError, SavedNotice } from './widgets';
+import { FileUploader, FormError } from './widgets';
 
 const CLOSING_LINE_IDS = ['first', 'second'] as const;
 
@@ -37,7 +38,6 @@ export function AboutEditor({ about }: { readonly about: AboutPage }) {
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
 
   function update<K extends keyof AboutInput>(key: K, value: AboutInput[K]) {
@@ -47,7 +47,7 @@ export function AboutEditor({ about }: { readonly about: AboutPage }) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setFailure(null);
-    setSaved(false);
+    clearAdminFlash();
     const parsed = aboutSchema.safeParse(content);
     if (!parsed.success) {
       setErrors(fieldErrors(parsed.error));
@@ -75,7 +75,7 @@ export function AboutEditor({ about }: { readonly about: AboutPage }) {
         leaderPhotoAttachmentId: newLeader?.id,
         closingPhotoAttachmentId: newClosing?.id,
       });
-      setSaved(true);
+      showAdminFlash('소개를 저장했습니다.');
     } catch (caught) {
       setFailure(errorMessage(caught));
     } finally {
@@ -86,7 +86,6 @@ export function AboutEditor({ about }: { readonly about: AboutPage }) {
   return (
     <Form onSubmit={submit} noValidate>
       <FormError message={failure} />
-      <SavedNotice message={saved ? '저장했습니다.' : null} />
       <Panel>
         <PanelTitle>담당 목회자</PanelTitle>
         <FieldRow $cols={2}>

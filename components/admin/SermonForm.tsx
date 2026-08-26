@@ -13,6 +13,7 @@ import type { UploadedFile } from '@/lib/client-upload';
 import { youtubeWatchUrl } from '@/lib/format';
 import { fieldErrors, sermonSchema } from '@/lib/schemas';
 import type { Sermon } from '@/lib/types';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import {
   Actions,
   ErrorText,
@@ -56,6 +57,7 @@ export function SermonForm({ sermon }: { sermon?: Sermon }) {
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setFailure(null);
+    clearAdminFlash();
 
     const parsed = sermonSchema.safeParse({
       title,
@@ -87,10 +89,12 @@ export function SermonForm({ sermon }: { sermon?: Sermon }) {
       if (sermon) {
         await clientPatch(`/sermons/${sermon.id}`, payload);
         setUploaded([]);
+        showAdminFlash('변경사항을 저장했습니다.');
         router.refresh();
       } else {
-        const created = await clientPost<Sermon>('/sermons', payload);
-        router.push(`${LIST_PATH}/${created.id}`);
+        await clientPost<Sermon>('/sermons', payload);
+        showAdminFlash('말씀을 등록했습니다.', true);
+        router.push(LIST_PATH);
       }
     } catch (caught) {
       setFailure(errorMessage(caught));
@@ -100,7 +104,9 @@ export function SermonForm({ sermon }: { sermon?: Sermon }) {
   }
 
   async function removeExisting(id: string) {
+    clearAdminFlash();
     await clientDelete(`/uploads/${id}`);
+    showAdminFlash('파일을 삭제했습니다.');
     router.refresh();
   }
 
@@ -225,6 +231,7 @@ export function SermonForm({ sermon }: { sermon?: Sermon }) {
             path={`/sermons/${sermon.id}`}
             confirmMessage="이 말씀 기록을 삭제합니다. 되돌릴 수 없습니다. 계속할까요?"
             redirectTo={LIST_PATH}
+            successMessage="말씀을 삭제했습니다."
           />
         ) : null}
       </Actions>

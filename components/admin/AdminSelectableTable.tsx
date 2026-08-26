@@ -162,8 +162,10 @@ export function AdminSelectableTable({
       {visibleRows.length === 0 ? (
         <AdminEmpty data-zone="admin-empty-state">등록된 항목이 없습니다.</AdminEmpty>
       ) : (
-        <TableWrap>
-          <Table>
+        <>
+          <MobileScrollHint>표를 좌우로 밀어 더 보기</MobileScrollHint>
+          <ScrollableTable data-testid="admin-table-scroll">
+            <Table>
           <thead>
             <tr>
               <SelectionHeading>
@@ -213,8 +215,9 @@ export function AdminSelectableTable({
               </SelectableRow>
             ))}
           </tbody>
-          </Table>
-        </TableWrap>
+            </Table>
+          </ScrollableTable>
+        </>
       )}
     </SelectableTableArea>
   );
@@ -272,5 +275,24 @@ const SelectableRow = styled.tr`
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.colors.primarySoft};
     outline-offset: -2px;
+  }
+`;
+
+const ScrollableTable = styled(TableWrap)`
+  scrollbar-width: thin;
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.md}) {
+    padding-bottom: 8px;
+  }
+`;
+
+const MobileScrollHint = styled.p`
+  display: none;
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.md}) {
+    display: block;
+    margin: 0;
+    color: ${({ theme }) => theme.colors.muted};
+    font-size: 13px;
   }
 `;

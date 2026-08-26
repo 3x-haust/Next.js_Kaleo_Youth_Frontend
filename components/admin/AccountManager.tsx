@@ -11,6 +11,7 @@ import {
   resetPasswordSchema,
 } from '@/lib/schemas';
 import type { AdminAccount } from '@/lib/types';
+import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import {
   Actions,
   CheckboxLabel,
@@ -26,7 +27,7 @@ import {
   Table,
   TableWrap,
 } from './parts';
-import { FormError, SavedNotice } from './widgets';
+import { FormError } from './widgets';
 
 export function AccountManager({
   accounts,
@@ -58,7 +59,6 @@ function AccountTable({
 }) {
   const router = useRouter();
   const [failure, setFailure] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
 
   async function toggleActive(account: AdminAccount) {
@@ -69,10 +69,15 @@ function AccountTable({
     if (!window.confirm(message)) return;
 
     setFailure(null);
-    setNotice(null);
+    clearAdminFlash();
     setBusy(account.id);
     try {
       await clientPatch(`/admin/accounts/${account.id}`, { isActive: next });
+      showAdminFlash(
+        next
+          ? `${account.loginId} 계정 사용을 재개했습니다.`
+          : `${account.loginId} 계정 사용을 중지했습니다.`,
+      );
       router.refresh();
     } catch (caught) {
       setFailure(errorMessage(caught));
@@ -94,12 +99,14 @@ function AccountTable({
     }
 
     setFailure(null);
-    setNotice(null);
+    clearAdminFlash();
     setBusy(account.id);
     try {
       await clientPatch(`/admin/accounts/${account.id}/password`, parsed.data);
 
-      setNotice(`${account.loginId} 계정의 비밀번호를 변경했습니다. 본인에게 직접 전달해 주세요.`);
+      showAdminFlash(
+        `${account.loginId} 계정의 비밀번호를 변경했습니다. 본인에게 직접 전달해 주세요.`,
+      );
       router.refresh();
     } catch (caught) {
       setFailure(errorMessage(caught));
@@ -111,7 +118,6 @@ function AccountTable({
   return (
     <div>
       <FormError message={failure} />
-      <SavedNotice message={notice} />
 
       <TableWrap>
         <Table>
@@ -190,13 +196,12 @@ function CreateAccountForm() {
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
-  const [saved, setSaved] = useState(false);
   const [pending, setPending] = useState(false);
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setFailure(null);
-    setSaved(false);
+    clearAdminFlash();
 
     const parsed = createAdminSchema.safeParse({
       loginId,
@@ -219,7 +224,7 @@ function CreateAccountForm() {
       setName('');
       setPositionLabel('');
       setIsSuperAdmin(false);
-      setSaved(true);
+      showAdminFlash('관리자 계정을 만들었습니다.');
       router.refresh();
     } catch (caught) {
       setFailure(errorMessage(caught));
@@ -231,7 +236,6 @@ function CreateAccountForm() {
   return (
     <Form onSubmit={submit} noValidate>
       <FormError message={failure} />
-      <SavedNotice message={saved ? '관리자 계정을 만들었습니다.' : null} />
 
       <FieldRow $cols={2}>
         <Field>
