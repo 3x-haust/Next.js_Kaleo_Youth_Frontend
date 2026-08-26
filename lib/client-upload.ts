@@ -46,7 +46,12 @@ export interface UploadFileProgress {
   readonly name: string;
   readonly loaded: number;
   readonly total: number;
-  readonly state: 'queued' | 'uploading' | 'complete' | 'failed';
+  readonly state:
+    | 'queued'
+    | 'uploading'
+    | 'processing'
+    | 'complete'
+    | 'failed';
 }
 
 type ProgressListener = (files: readonly UploadFileProgress[]) => void;
@@ -95,7 +100,7 @@ async function decodePreview(url: string): Promise<string | undefined> {
 async function uploadBatch(
   files: readonly File[],
   ownerType: UploadOwnerType,
-  onProgress: (loaded: number) => void,
+  onProgress: (loaded: number, processing: boolean) => void,
   canRetry = true,
 ): Promise<UploadedFile[]> {
   return new Promise((resolve, reject) => {
@@ -107,10 +112,13 @@ async function uploadBatch(
     if (csrfToken) request.setRequestHeader(CSRF_HEADER, csrfToken);
 
     request.upload.onprogress = (event) => {
-      onProgress(event.loaded);
+      onProgress(event.loaded, false);
     };
     request.upload.onload = () => {
-      onProgress(files.reduce((total, file) => total + file.size, 0));
+      onProgress(
+        files.reduce((total, file) => total + file.size, 0),
+        true,
+      );
     };
     request.onerror = () => {
       reject(new ClientApiError(0, '업로드 연결이 끊어졌습니다.'));
@@ -234,7 +242,7 @@ export async function uploadFiles(
         const result = await uploadBatch(
           batch.files,
           ownerType,
-          (loaded) => {
+          (loaded, processing) => {
             let remaining = loaded;
             for (let offset = 0; offset < batch.files.length; offset += 1) {
               const file = batch.files[offset];
@@ -247,7 +255,10 @@ export async function uploadFiles(
               progress[index] = {
                 ...progress[index],
                 loaded: fileLoaded,
-                state: fileLoaded >= file.size ? 'complete' : 'uploading',
+                state:
+                  processing && fileLoaded >= file.size
+                    ? 'processing'
+                    : 'uploading',
               };
             }
             publish();
@@ -260,8 +271,15 @@ export async function uploadFiles(
           );
         }
         result.forEach((file, offset) => {
-          uploaded[batch.start + offset] = file;
+          const index = batch.start + offset;
+          uploaded[index] = file;
+          progress[index] = {
+            ...progress[index],
+            loaded: batch.files[offset].size,
+            state: 'complete',
+          };
         });
+        publish();
       } catch (error) {
         batchErrors.push(error);
       }
