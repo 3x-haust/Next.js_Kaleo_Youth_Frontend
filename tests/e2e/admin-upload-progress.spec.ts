@@ -6,6 +6,7 @@ const apiOrigin = process.env.PW_API_ORIGIN ?? 'http://localhost:4000';
 const frontendOrigin = new URL(
   process.env.PW_FRONTEND_URL ?? 'http://localhost:3000',
 ).origin;
+const sessionCookieMigration = 'kaleo-session-cookie-v1';
 
 function envValue(source: string, key: string): string {
   const line = source
@@ -33,6 +34,9 @@ let authCookies: Parameters<BrowserContext['addCookies']>[0];
 
 test.beforeAll(async ({ browser }) => {
   const context = await browser.newContext();
+  await context.addInitScript((key) => {
+    localStorage.setItem(key, 'complete');
+  }, sessionCookieMigration);
   const page = await context.newPage();
   await login(page);
   authCookies = await context.cookies();
@@ -40,6 +44,9 @@ test.beforeAll(async ({ browser }) => {
 });
 
 test.beforeEach(async ({ context }) => {
+  await context.addInitScript((key) => {
+    localStorage.setItem(key, 'complete');
+  }, sessionCookieMigration);
   await context.addCookies(authCookies);
 });
 
@@ -185,32 +192,22 @@ test('large multi-photo upload uses one optimized batch request', async ({
   );
 });
 
-test('eleven HEIC photos upload through three concurrent batches', async ({
+test('eleven HEIC photos upload through sequential bounded batches', async ({
   page,
 }) => {
   await page.goto('/admin/gallery/new');
 
   const selected = await heicFiles();
-  let requestCount = 0;
+  const requestNames: string[][] = [];
   const uploadedNames: string[] = [];
-  let releaseRequests!: () => void;
-  const release = new Promise<void>((resolve) => {
-    releaseRequests = resolve;
-  });
-  let allRequestsStarted!: () => void;
-  const started = new Promise<void>((resolve) => {
-    allRequestsStarted = resolve;
-  });
 
   await page.route(`${apiOrigin}/api/uploads`, async (route) => {
-    requestCount += 1;
     const body = route.request().postDataBuffer();
     const names = [
       ...(body?.toString('latin1').matchAll(/filename="([^"]+)"/g) ?? []),
     ].map((match) => match[1]);
+    requestNames.push(names);
     uploadedNames.push(...names);
-    if (requestCount === 3) allRequestsStarted();
-    await release;
     await route.fulfill({
       status: 201,
       headers: responseHeaders(),
@@ -227,21 +224,13 @@ test('eleven HEIC photos upload through three concurrent batches', async ({
   });
 
   await page.getByLabel('사진 추가').setInputFiles(selected);
-  try {
-    await Promise.race([
-      started,
-      new Promise<never>((_, reject) => {
-        setTimeout(
-          () => reject(new Error('Three upload batches did not start')),
-          5_000,
-        );
-      }),
-    ]);
-    expect(requestCount).toBe(3);
-  } finally {
-    releaseRequests();
-  }
   await expect(page.locator('a[href*="/uploads/heic-batch-"]')).toHaveCount(11);
+  expect(requestNames).toEqual([
+    selected.slice(0, 3).map((file) => file.name),
+    selected.slice(3, 6).map((file) => file.name),
+    selected.slice(6, 9).map((file) => file.name),
+    selected.slice(9).map((file) => file.name),
+  ]);
   expect(uploadedNames.sort()).toEqual(
     selected.map((file) => file.name).sort(),
   );
@@ -513,7 +502,7 @@ test('real API processes one optimized photo batch and removes it cleanly', asyn
   await expect(page.locator('a[href*="/uploads/"]')).toHaveCount(0);
 });
 
-test('real API processes eleven HEIC photos across three batches', async ({
+test('real API processes eleven HEIC photos in bounded batches', async ({
   page,
 }) => {
   await page.goto('/admin/gallery/new');
@@ -532,7 +521,7 @@ test('real API processes eleven HEIC photos across three batches', async ({
   await expect(page.locator('a[href*="/uploads/"]')).toHaveCount(11, {
     timeout: 30_000,
   });
-  expect(uploadCount).toBe(3);
+  expect(uploadCount).toBe(4);
 
   for (let remaining = 11; remaining > 0; remaining -= 1) {
     const deleted = page.waitForResponse(
