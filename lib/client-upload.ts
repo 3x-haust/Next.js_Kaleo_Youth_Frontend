@@ -15,6 +15,13 @@ const CSRF_HEADER = 'x-csrf-token';
 const MAX_PARALLEL_PREPARATIONS = 2;
 const UPLOAD_BATCH_SIZE = 4;
 const MAX_PARALLEL_UPLOADS = 3;
+const SERVER_NORMALIZED_BATCH_SIZE = 3;
+const SERVER_NORMALIZED_IMAGE_TYPES = new Set([
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
+]);
 
 export interface UploadedFile {
   readonly id: string;
@@ -200,13 +207,19 @@ export async function uploadFiles(
   const uploaded: Array<UploadedFile | undefined> = Array.from({
     length: prepared.length,
   });
+  const containsServerNormalizedImage = prepared.some((file) =>
+    SERVER_NORMALIZED_IMAGE_TYPES.has(file.type),
+  );
+  const batchSize = containsServerNormalizedImage
+    ? SERVER_NORMALIZED_BATCH_SIZE
+    : UPLOAD_BATCH_SIZE;
   const batches = Array.from(
-    { length: Math.ceil(prepared.length / UPLOAD_BATCH_SIZE) },
+    { length: Math.ceil(prepared.length / batchSize) },
     (_, batchIndex) => {
-      const start = batchIndex * UPLOAD_BATCH_SIZE;
+      const start = batchIndex * batchSize;
       return {
         start,
-        files: prepared.slice(start, start + UPLOAD_BATCH_SIZE),
+        files: prepared.slice(start, start + batchSize),
       };
     },
   );
@@ -257,7 +270,12 @@ export async function uploadFiles(
 
   await Promise.all(
     Array.from(
-      { length: Math.min(MAX_PARALLEL_UPLOADS, batches.length) },
+      {
+        length: Math.min(
+          containsServerNormalizedImage ? 1 : MAX_PARALLEL_UPLOADS,
+          batches.length,
+        ),
+      },
       () => uploadWorker(),
     ),
   );
