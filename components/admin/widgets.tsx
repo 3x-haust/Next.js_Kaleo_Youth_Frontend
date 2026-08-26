@@ -188,7 +188,7 @@ export function FileUploader({
       {uploadProgress.length > 0 ? (
         <UploadProgressPanel role="status" aria-label="사진 업로드 진행">
           <UploadProgressSummary>
-            <strong>사진 업로드 진행</strong>
+            <strong>사진 업로드 및 변환 중</strong>
             <span>
               {uploadProgress.filter((file) => file.state === 'complete').length}
               {' / '}

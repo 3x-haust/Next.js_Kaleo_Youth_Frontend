@@ -126,6 +126,7 @@ test('multi-photo upload exposes aggregate and file progress', async ({
     await expect(
       status.getByRole('progressbar', { name: '전체 업로드 진행률' }),
     ).toHaveAttribute('max', '100');
+    await expect(status).toContainText('사진 업로드 및 변환 중');
     await expect(status.getByText('one.png')).toBeVisible();
     await expect(status.getByText('four.png')).toBeVisible();
     await page.screenshot({
