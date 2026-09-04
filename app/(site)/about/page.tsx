@@ -5,6 +5,7 @@ import { Reveal } from '@/components/motion/Motion';
 import { PageUnderGlow } from '@/components/ui/primitives';
 import { apiGet } from '@/lib/api';
 import { toFileUrl } from '@/lib/format';
+import { pageMetadata } from '@/lib/seo';
 import type {
   AboutPage,
   AboutValue,
@@ -40,7 +41,11 @@ async function loadAbout(): Promise<AboutPage> {
 
 export async function generateMetadata(): Promise<Metadata> {
   const about = await loadAbout();
-  return { title: about.metaTitle, description: about.metaDescription };
+  return pageMetadata({
+    title: about.metaTitle,
+    description: about.metaDescription,
+    path: '/about',
+  });
 }
 
 function ValueGlyph({ icon }: { readonly icon: AboutValue['icon'] }) {

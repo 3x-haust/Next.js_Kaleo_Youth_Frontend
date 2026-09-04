@@ -5,6 +5,7 @@ import { ApiError, apiGet } from '@/lib/api';
 import { YouTubeFacade } from '@/components/media/YouTubeFacade';
 import { PageUnderGlow, PageUnderGlowClip } from '@/components/ui/primitives';
 import { excerpt, toFileUrl, youtubeWatchUrl } from '@/lib/format';
+import { pageMetadata } from '@/lib/seo';
 import type { Sermon } from '@/lib/types';
 import {
   BottomBack,
@@ -52,7 +53,17 @@ async function loadRecent(current: Sermon): Promise<Sermon[]> {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const sermon = await load((await params).id);
   if (!sermon) return { title: '말씀을 찾을 수 없습니다' };
-  return { title: sermon.title, description: excerpt(sermon.summary, 120) || `${sermon.preacherName}의 말씀입니다.` };
+  const description =
+    excerpt(sermon.summary, 120) ||
+    `${sermon.preacherName}의 수도교회 청소년부 주일 말씀입니다.`;
+  return pageMetadata({
+    title: sermon.title,
+    description,
+    path: `/sermons/${sermon.id}`,
+    image:
+      toFileUrl(sermon.posterUrl ?? sermon.thumbnailUrl) ||
+      '/images/seo/home-share.png',
+  });
 }
 export default async function SermonDetailPage({ params }: Props) {
   const sermon = await load((await params).id);

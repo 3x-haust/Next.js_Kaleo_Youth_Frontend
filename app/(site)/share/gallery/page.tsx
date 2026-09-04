@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { PageUnderGlow, PageUnderGlowClip } from '@/components/ui/primitives';
 import { apiGetSafe } from '@/lib/api';
 import { toText, type SearchParams } from '@/lib/search-params';
+import { pageMetadata } from '@/lib/seo';
 import type { PaginatedResult, Post } from '@/lib/types';
 import {
   Count,
@@ -16,10 +17,11 @@ import {
 } from './gallery.styled';
 import { GalleryArchive } from './GalleryArchive';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: '갤러리',
   description: '수도교회 청소년부의 예배와 일정 사진입니다.',
-};
+  path: '/share/gallery',
+});
 
 const EMPTY: PaginatedResult<Post> = { items: [], total: 0, page: 1, limit: 6, totalPages: 1 };
 

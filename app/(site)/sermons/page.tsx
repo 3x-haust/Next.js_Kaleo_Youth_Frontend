@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { PageUnderGlow, PageUnderGlowClip } from '@/components/ui/primitives';
 import { apiGetSafe } from '@/lib/api';
 import { toText, type SearchParams } from '@/lib/search-params';
+import { pageMetadata } from '@/lib/seo';
 import type { PaginatedResult, Sermon } from '@/lib/types';
 import {
   Empty,
@@ -14,7 +15,11 @@ import {
 } from './sermons.styled';
 import { SermonArchive } from './SermonArchive';
 
-export const metadata: Metadata = { title: '말씀', description: '수도교회 청소년부 주일 예배 말씀입니다.' };
+export const metadata: Metadata = pageMetadata({
+  title: '말씀',
+  description: '수도교회 청소년부 주일 예배 말씀입니다.',
+  path: '/sermons',
+});
 const EMPTY: PaginatedResult<Sermon> = { items: [], total: 0, page: 1, limit: 6, totalPages: 1 };
 interface Props { searchParams: Promise<SearchParams>; }
 

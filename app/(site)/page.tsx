@@ -5,6 +5,7 @@ import type { Post, Sermon } from '@/lib/types';
 import { CHURCH_LOCATION, NAVER_MAP_LINK, SITE } from '@/lib/site';
 import { YouTubeFacade } from '@/components/media/YouTubeFacade';
 import { InteractiveChurchMap } from '@/components/map/InteractiveChurchMap';
+import { SiteStructuredData } from '@/components/seo/SiteStructuredData';
 import { HeroBackgroundVideo } from './HeroBackgroundVideo';
 import {
   About,
@@ -105,6 +106,7 @@ export default async function HomePage() {
   const stories = latestGallery;
   return (
     <Page>
+      <SiteStructuredData />
       <Hero aria-labelledby="home-title">
         <HeroBackgroundVideo />
         <HeroShade data-zone="home-hero-blue-overlay" />

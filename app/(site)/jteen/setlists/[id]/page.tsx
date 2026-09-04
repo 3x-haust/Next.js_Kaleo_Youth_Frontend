@@ -11,6 +11,7 @@ import {
   toFileUrl,
 } from '@/lib/format';
 import { SITE } from '@/lib/site';
+import { pageMetadata } from '@/lib/seo';
 import type { Setlist } from '@/lib/types';
 import { Empty } from '@/styles/editorial.styled';
 import {
@@ -58,10 +59,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const setlist = await load(id);
   if (!setlist) return { title: '콘티를 찾을 수 없습니다' };
 
-  return {
+  return pageMetadata({
     title: setlist.title,
     description: `${formatDateWithWeekday(setlist.serviceDate)} ${SITE.team.label} 찬양 콘티 (${setlist.songs.length}곡)`,
-  };
+    path: `/jteen/setlists/${setlist.id}`,
+  });
 }
 
 export default async function SetlistDetailPage({ params }: Props) {

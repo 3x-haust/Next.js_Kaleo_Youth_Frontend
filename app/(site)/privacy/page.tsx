@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE } from '@/lib/site';
+import { pageMetadata } from '@/lib/seo';
 import {
   DetailBody,
   PageHeader,
@@ -7,10 +8,11 @@ import {
   StandingLine,
 } from '@/styles/editorial.styled';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: '개인정보 처리방침',
   description: '수도교회 청소년부 KALEO YOUTH 웹사이트의 개인정보 처리방침입니다.',
-};
+  path: '/privacy',
+});
 
 export default function PrivacyPage() {
   return (

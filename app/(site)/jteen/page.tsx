@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
 import { apiGetSafe } from '@/lib/api';
+import { pageMetadata } from '@/lib/seo';
 import type { Setlist } from '@/lib/types';
 import {
   EmptyEyebrow,
@@ -11,10 +12,11 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMetadata({
   title: 'J-TEEN WORSHIP',
   description: '수도교회 청소년부 J-TEEN의 이번 주 찬양 콘티입니다.',
-};
+  path: '/jteen',
+});
 
 export default async function JteenPage() {
   const setlists = await apiGetSafe<Setlist[]>('/setlists/latest', [], {

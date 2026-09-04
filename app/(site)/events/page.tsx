@@ -4,6 +4,7 @@ import { Reveal } from '@/components/motion/Motion';
 import { redirect } from 'next/navigation';
 import { apiGet } from '@/lib/api';
 import { formatDateRange } from '@/lib/format';
+import { pageMetadata } from '@/lib/seo';
 import { toPage, toText, type SearchParams } from '@/lib/search-params';
 import type { ChurchEvent, PaginatedResult } from '@/lib/types';
 import { PageUnderGlow, PageUnderGlowClip } from '@/components/ui/primitives';
@@ -27,7 +28,11 @@ import {
   Top,
 } from './events.styled';
 
-export const metadata: Metadata = { title: '일정', description: '수도교회 청소년부의 다가오는 일정입니다.' };
+export const metadata: Metadata = pageMetadata({
+  title: '일정',
+  description: '수도교회 청소년부의 다가오는 일정입니다.',
+  path: '/events',
+});
 interface Props { searchParams: Promise<SearchParams>; }
 
 function dateParts(value: string) {

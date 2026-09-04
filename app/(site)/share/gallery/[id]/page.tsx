@@ -4,7 +4,8 @@ import { Reveal } from '@/components/motion/Motion';
 import { PhotoGrid } from '@/components/share/PhotoGrid';
 import { PageUnderGlow, PageUnderGlowClip } from '@/components/ui/primitives';
 import { ApiError, apiGet } from '@/lib/api';
-import { excerpt, formatDateRange } from '@/lib/format';
+import { excerpt, formatDateRange, toFileUrl } from '@/lib/format';
+import { pageMetadata } from '@/lib/seo';
 import type { Post } from '@/lib/types';
 import {
   BackLink,
@@ -36,7 +37,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
   const post = await load(id);
   if (!post) return { title: '앨범을 찾을 수 없습니다' };
-  return { title: post.title, description: excerpt(post.content, 120) };
+  return pageMetadata({
+    title: post.title,
+    description:
+      excerpt(post.content, 120) ||
+      `${formatDateRange(post.startDate, post.endDate)} 수도교회 청소년부 갤러리`,
+    path: `/share/gallery/${post.id}`,
+    image:
+      toFileUrl(post.thumbnailUrl ?? post.attachments?.[0]?.fileUrl) ||
+      '/images/seo/home-share.png',
+  });
 }
 
 export default async function GalleryDetailPage({ params }: Props) {

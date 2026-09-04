@@ -1,17 +1,32 @@
 import type { Metadata, Viewport } from 'next';
 import { StyledRegistry } from '@/lib/registry';
+import { pageMetadata } from '@/lib/seo';
 import { SITE, siteUrl } from '@/lib/site';
 import { SiteGlobalStyle } from '@/lib/site-global-styles';
 
+const homeMetadata = pageMetadata({
+  title: SITE.nameKo,
+  description: SITE.description,
+  path: '/',
+});
+
 export const metadata: Metadata = {
+  ...homeMetadata,
   metadataBase: new URL(siteUrl()),
   title: {
     default: SITE.nameKo,
     template: `%s · ${SITE.nameKo}`,
   },
   applicationName: SITE.nameKo,
-  description: SITE.description,
-  alternates: { canonical: '/' },
+  keywords: [
+    '수도교회',
+    '수도교회 청소년부',
+    'KALEO YOUTH',
+    '양천구 교회',
+    '신월동 교회',
+    '청소년부',
+    '중고등부',
+  ],
   icons: {
     icon: {
       url: '/images/logo/kaleo-logo-after.svg',
@@ -19,29 +34,17 @@ export const metadata: Metadata = {
     },
     shortcut: '/images/logo/kaleo-logo-after.svg',
   },
-  openGraph: {
-    title: SITE.nameKo,
-    description: SITE.description,
-    type: 'website',
-    locale: 'ko_KR',
-    url: '/',
-    siteName: SITE.nameKo,
-    images: [
-      {
-        url: '/images/seo/home-share.png',
-        width: 1200,
-        height: 630,
-        alt: '수도교회 청소년부 KALEO YOUTH',
-      },
-    ],
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+      'max-video-preview': -1,
+    },
   },
-  twitter: {
-    card: 'summary_large_image',
-    title: SITE.nameKo,
-    description: SITE.description,
-    images: ['/images/seo/home-share.png'],
-  },
-  robots: { index: true, follow: true },
 };
 
 export const viewport: Viewport = {
