@@ -11,6 +11,7 @@ import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
 import { Actions, ErrorText, Field, FieldRow, Form, Input, Label, Textarea } from './parts';
 import { DeleteButton, FormError } from './widgets';
 import { GalleryPhotoManager } from './GalleryPhotoManager';
+import type { GalleryRemovalResult } from './GalleryPhotoManager.types';
 
 export function PostForm({ post }: { post?: Post }) {
   const router = useRouter();
@@ -29,6 +30,12 @@ export function PostForm({ post }: { post?: Post }) {
     () => post?.endDate?.slice(0, 10) ?? '',
   );
   const [uploaded, setUploaded] = useState<UploadedFile[]>([]);
+  const [removedPersistedIds, setRemovedPersistedIds] = useState<
+    ReadonlySet<string>
+  >(() => new Set());
+  const visiblePersistedImages = persistedImages.filter(
+    (attachment) => !removedPersistedIds.has(attachment.id),
+  );
   const [thumbnailUrl, setThumbnailUrl] = useState<string | null>(() => {
     const persistedThumbnail = persistedImages.find(
       (attachment) => attachment.fileUrl === post?.thumbnailUrl,
@@ -42,7 +49,10 @@ export function PostForm({ post }: { post?: Post }) {
   function changeUploaded(files: UploadedFile[]) {
     setUploaded(files);
 
-    const availableUrls = [...persistedImages.map((image) => image.fileUrl), ...files.map((file) => file.fileUrl)];
+    const availableUrls = [
+      ...visiblePersistedImages.map((image) => image.fileUrl),
+      ...files.map((file) => file.fileUrl),
+    ];
     setThumbnailUrl((current) =>
       current && availableUrls.includes(current) ? current : availableUrls[0] ?? null,
     );
@@ -103,24 +113,50 @@ export function PostForm({ post }: { post?: Post }) {
     }
   }
 
-  async function removeExisting(id: string) {
-    const removed = post?.attachments?.find((attachment) => attachment.id === id);
-    await clientDelete(`/uploads/${id}`);
-
-    if (post && removed) {
-      const remainingUrls = [
-        ...persistedImages.filter((attachment) => attachment.id !== id).map((attachment) => attachment.fileUrl),
-        ...uploaded.map((file) => file.fileUrl),
-      ];
-      const nextThumbnail = thumbnailUrl === removed.fileUrl
-        ? remainingUrls[0] ?? null
-        : thumbnailUrl;
-      setThumbnailUrl(nextThumbnail);
-      if (removed.fileUrl === post.thumbnailUrl || thumbnailUrl === removed.fileUrl) {
-        await clientPatch(`/posts/${post.id}`, { thumbnailUrl: nextThumbnail });
+  async function removeExisting(
+    ids: readonly string[],
+  ): Promise<GalleryRemovalResult> {
+    const selected = persistedImages.filter((attachment) =>
+      ids.includes(attachment.id),
+    );
+    const removedIds: string[] = [];
+    const failedIds: string[] = [];
+    let firstFailure: string | null = null;
+    for (const attachment of selected) {
+      try {
+        await clientDelete(`/uploads/${attachment.id}`);
+        removedIds.push(attachment.id);
+      } catch (caught) {
+        failedIds.push(attachment.id);
+        firstFailure ??= errorMessage(caught);
       }
     }
-    router.refresh();
+
+    if (removedIds.length > 0) {
+      const removedAfter = new Set([...removedPersistedIds, ...removedIds]);
+      setRemovedPersistedIds(removedAfter);
+      const remainingUrls = [
+        ...persistedImages
+          .filter((attachment) => !removedAfter.has(attachment.id))
+          .map((attachment) => attachment.fileUrl),
+        ...uploaded.map((file) => file.fileUrl),
+      ];
+      const removedUrls = new Set(
+        selected
+          .filter((attachment) => removedIds.includes(attachment.id))
+          .map((attachment) => attachment.fileUrl),
+      );
+      const nextThumbnail =
+        thumbnailUrl && !removedUrls.has(thumbnailUrl)
+          ? thumbnailUrl
+          : remainingUrls[0] ?? null;
+      setThumbnailUrl(nextThumbnail);
+      if (post && nextThumbnail !== post.thumbnailUrl) {
+        await clientPatch(`/posts/${post.id}`, { thumbnailUrl: nextThumbnail });
+      }
+      router.refresh();
+    }
+    return { removedIds, failedIds, firstFailure };
   }
 
   return (
@@ -185,7 +221,7 @@ export function PostForm({ post }: { post?: Post }) {
       <Field>
         <Label>사진 올리기 · 대표 이미지</Label>
         <GalleryPhotoManager
-          persisted={persistedImages}
+          persisted={visiblePersistedImages}
           uploaded={uploaded}
           thumbnailUrl={thumbnailUrl}
           onUploadedChange={changeUploaded}

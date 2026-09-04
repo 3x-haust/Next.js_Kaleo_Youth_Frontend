@@ -1,8 +1,11 @@
 'use client';
 
 import { useRef, useState, type ChangeEvent } from 'react';
-import { Button } from '@/components/ui/primitives';
-import { clientDelete, errorMessage } from '@/lib/client-api';
+import {
+  ClientApiError,
+  clientDelete,
+  errorMessage,
+} from '@/lib/client-api';
 import {
   uploadFiles,
   type UploadFileProgress,
@@ -10,16 +13,13 @@ import {
 } from '@/lib/client-upload';
 import type { Attachment } from '@/lib/types';
 import { ErrorText } from './parts';
-import {
-  BatchActions,
-  BatchStatus,
-  Manager,
-  SelectAllLabel,
-  StatusText,
-  Toolbar,
-} from './GalleryPhotoManager.styles';
+import { Manager, StatusText } from './GalleryPhotoManager.styles';
 import { GalleryPhotoList } from './GalleryPhotoList';
-import type { GalleryPhotoItem } from './GalleryPhotoManager.types';
+import { GalleryPhotoToolbar } from './GalleryPhotoToolbar';
+import type {
+  GalleryPhotoItem,
+  GalleryRemovalResult,
+} from './GalleryPhotoManager.types';
 import { GalleryUploadProgress } from './GalleryUploadProgress';
 
 export function GalleryPhotoManager({
@@ -35,7 +35,9 @@ export function GalleryPhotoManager({
   readonly thumbnailUrl: string | null;
   readonly onUploadedChange: (files: UploadedFile[]) => void;
   readonly onThumbnailChange: (fileUrl: string) => void;
-  readonly onRemovePersisted: (id: string) => Promise<void>;
+  readonly onRemovePersisted: (
+    ids: readonly string[],
+  ) => Promise<GalleryRemovalResult>;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState(false);
@@ -94,7 +96,10 @@ export function GalleryPhotoManager({
 
   async function removeSingle(item: GalleryPhotoItem) {
     if (item.persisted) {
-      await onRemovePersisted(item.id);
+      const result = await onRemovePersisted([item.id]);
+      if (result.firstFailure) {
+        throw new ClientApiError(0, result.firstFailure);
+      }
       return;
     }
     const remaining = uploaded.filter((file) => file.id !== item.id);
@@ -126,21 +131,35 @@ export function GalleryPhotoManager({
     let failed = 0;
     let firstFailure: string | null = null;
     let workingUploaded = [...uploaded];
+    const failedUrls = new Set<string>();
+    const persistedItems = items.filter(
+      (item) => item.persisted && activeSelectedUrls.has(item.fileUrl),
+    );
+
+    if (persistedItems.length > 0) {
+      const result = await onRemovePersisted(
+        persistedItems.map((item) => item.id),
+      );
+      removed += result.removedIds.length;
+      failed += result.failedIds.length;
+      firstFailure ??= result.firstFailure;
+      const failedPersistedIds = new Set(result.failedIds);
+      for (const item of persistedItems) {
+        if (failedPersistedIds.has(item.id)) failedUrls.add(item.fileUrl);
+      }
+    }
 
     for (const item of items) {
-      if (!activeSelectedUrls.has(item.fileUrl)) continue;
+      if (item.persisted || !activeSelectedUrls.has(item.fileUrl)) continue;
       try {
-        if (item.persisted) {
-          await onRemovePersisted(item.id);
-        } else {
-          workingUploaded = workingUploaded.filter((file) => file.id !== item.id);
-          await clientDelete(`/uploads/${item.id}`);
-          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
-          onUploadedChange(workingUploaded);
-        }
+        await clientDelete(`/uploads/${item.id}`);
+        workingUploaded = workingUploaded.filter((file) => file.id !== item.id);
+        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+        onUploadedChange(workingUploaded);
         removed += 1;
       } catch (caught) {
         failed += 1;
+        failedUrls.add(item.fileUrl);
         firstFailure ??= errorMessage(caught);
       }
     }
@@ -152,7 +171,7 @@ export function GalleryPhotoManager({
     } else {
       setStatus(`${removed}장의 사진을 삭제했습니다.`);
     }
-    setSelectedFileUrls(new Set());
+    setSelectedFileUrls(failedUrls);
     setPending(false);
   }
 
@@ -175,52 +194,16 @@ export function GalleryPhotoManager({
 
   return (
     <Manager>
-      <input
-        ref={inputRef}
-        type="file"
-        accept={HEIF_ACCEPT}
-        multiple
-        aria-label="사진 추가"
-        onChange={pick}
-        hidden
+      <GalleryPhotoToolbar
+        inputRef={inputRef}
+        pending={pending}
+        itemCount={items.length}
+        selectedCount={activeSelectedUrls.size}
+        allSelected={allSelected}
+        onPick={pick}
+        onToggleAll={toggleAll}
+        onRemoveSelected={() => void removeSelected()}
       />
-      <Toolbar>
-        <Button
-          type="button"
-          $variant="outline"
-          $small
-          onClick={() => inputRef.current?.click()}
-          disabled={pending}
-        >
-          {pending ? '올리는 중…' : '사진 추가'}
-        </Button>
-        {items.length > 0 ? (
-          <SelectAllLabel>
-            <input
-              type="checkbox"
-              aria-label="사진 전체 선택"
-              checked={allSelected}
-              disabled={pending}
-              onChange={(event) => toggleAll(event.target.checked)}
-            />
-            전체 선택
-          </SelectAllLabel>
-        ) : null}
-        {activeSelectedUrls.size > 0 ? (
-          <BatchActions>
-            <BatchStatus role="status">{activeSelectedUrls.size}장 선택</BatchStatus>
-            <Button
-              type="button"
-              $variant="danger"
-              $small
-              disabled={pending}
-              onClick={removeSelected}
-            >
-              {pending ? '삭제 중…' : '선택 삭제'}
-            </Button>
-          </BatchActions>
-        ) : null}
-      </Toolbar>
       {error ? <ErrorText>{error}</ErrorText> : null}
       {status ? <StatusText role="status">{status}</StatusText> : null}
 
@@ -245,6 +228,3 @@ export function GalleryPhotoManager({
     </Manager>
   );
 }
-
-const HEIF_ACCEPT =
-  '.heic,.heif,image/heic,image/heif,image/heic-sequence,image/heif-sequence';

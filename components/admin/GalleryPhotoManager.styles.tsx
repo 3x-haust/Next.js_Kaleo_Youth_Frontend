@@ -129,6 +129,12 @@ export const PhotoCard = styled.li<{
 
   ${({ $selected, theme }) =>
     $selected ? `outline: 2px solid ${theme.colors.primarySoft};` : ''}
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.sm}) {
+    display: grid;
+    grid-template-columns: 80px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
 `;
 
 export const ThumbnailRadioLabel = styled.label`
@@ -152,6 +158,15 @@ export const ThumbnailRadioLabel = styled.label`
     height: 72px;
     border-radius: ${({ theme }) => theme.radius.sm};
     object-fit: cover;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.sm}) {
+    grid-row: 1 / 3;
+
+    img {
+      width: 80px;
+      height: 60px;
+    }
   }
 `;
 
@@ -192,6 +207,12 @@ export const SelectCheck = styled.input`
   flex: none;
   accent-color: ${({ theme }) => theme.colors.primary};
   cursor: pointer;
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.sm}) {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+  }
 `;
 
 export const RemoveButton = styled.button`
@@ -207,5 +228,11 @@ export const RemoveButton = styled.button`
 
   &:disabled {
     opacity: 0.5;
+  }
+
+  @media (max-width: ${({ theme }) => theme.breakpoint.sm}) {
+    grid-column: 3;
+    grid-row: 2;
+    justify-self: end;
   }
 `;
