@@ -136,43 +136,52 @@ export function GalleryPhotoManager({
       (item) => item.persisted && activeSelectedUrls.has(item.fileUrl),
     );
 
-    if (persistedItems.length > 0) {
-      const result = await onRemovePersisted(
-        persistedItems.map((item) => item.id),
-      );
-      removed += result.removedIds.length;
-      failed += result.failedIds.length;
-      firstFailure ??= result.firstFailure;
-      const failedPersistedIds = new Set(result.failedIds);
-      for (const item of persistedItems) {
-        if (failedPersistedIds.has(item.id)) failedUrls.add(item.fileUrl);
+    try {
+      if (persistedItems.length > 0) {
+        const result = await onRemovePersisted(
+          persistedItems.map((item) => item.id),
+        );
+        removed += result.removedIds.length;
+        failed += result.failedIds.length;
+        firstFailure ??= result.firstFailure;
+        const failedPersistedIds = new Set(result.failedIds);
+        for (const item of persistedItems) {
+          if (failedPersistedIds.has(item.id)) failedUrls.add(item.fileUrl);
+        }
       }
-    }
 
-    for (const item of items) {
-      if (item.persisted || !activeSelectedUrls.has(item.fileUrl)) continue;
-      try {
-        await clientDelete(`/uploads/${item.id}`);
-        workingUploaded = workingUploaded.filter((file) => file.id !== item.id);
-        if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
-        onUploadedChange(workingUploaded);
-        removed += 1;
-      } catch (caught) {
-        failed += 1;
-        failedUrls.add(item.fileUrl);
-        firstFailure ??= errorMessage(caught);
+      for (const item of items) {
+        if (item.persisted || !activeSelectedUrls.has(item.fileUrl)) continue;
+        try {
+          await clientDelete(`/uploads/${item.id}`);
+          workingUploaded = workingUploaded.filter(
+            (file) => file.id !== item.id,
+          );
+          if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
+          onUploadedChange(workingUploaded);
+          removed += 1;
+        } catch (caught) {
+          failed += 1;
+          failedUrls.add(item.fileUrl);
+          firstFailure ??= errorMessage(caught);
+        }
       }
-    }
 
-    if (failed > 0) {
-      setError(
-        `${removed}장 삭제, ${failed}장 삭제 실패.${firstFailure ? ` ${firstFailure}` : ''}`,
-      );
-    } else {
-      setStatus(`${removed}장의 사진을 삭제했습니다.`);
+      if (failed > 0 || firstFailure) {
+        setError(
+          failed > 0
+            ? `${removed}장 삭제, ${failed}장 삭제 실패.${firstFailure ? ` ${firstFailure}` : ''}`
+            : `${removed}장 삭제. ${firstFailure}`,
+        );
+      } else {
+        setStatus(`${removed}장의 사진을 삭제했습니다.`);
+      }
+      setSelectedFileUrls(failedUrls);
+    } catch (caught) {
+      setError(errorMessage(caught));
+    } finally {
+      setPending(false);
     }
-    setSelectedFileUrls(failedUrls);
-    setPending(false);
   }
 
   function toggleAll(checked: boolean) {

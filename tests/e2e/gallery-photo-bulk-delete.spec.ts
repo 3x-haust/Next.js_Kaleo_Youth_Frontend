@@ -156,3 +156,50 @@ test('bulk deleting persisted photos keeps a remaining representative image', as
   await expect(radios.first()).toBeChecked();
   expect(patchedThumbnails.at(-1)).toBe(post.attachments[2]?.fileUrl);
 });
+
+test('thumbnail patch failure releases pending controls after persisted deletion', async ({
+  page,
+}) => {
+  // Given
+  const response = await page.request.get(
+    `${API_ORIGIN}/api/posts/${GALLERY_POST_ID}`,
+  );
+  const post = z
+    .object({
+      attachments: z.array(z.object({ id: z.string() })).min(2),
+    })
+    .parse(await response.json());
+  await page.route(`${API_ORIGIN}/api/uploads/**`, (route) =>
+    route.fulfill({ status: 204, body: '' }),
+  );
+  await page.route(
+    `${API_ORIGIN}/api/posts/${GALLERY_POST_ID}`,
+    async (route) => {
+      if (route.request().method() === 'PATCH') {
+        await route.fulfill({
+          status: 500,
+          contentType: 'application/json',
+          body: JSON.stringify({ message: '대표 이미지 저장 실패' }),
+        });
+        return;
+      }
+      await route.continue();
+    },
+  );
+  await page.goto(`/admin/gallery/${GALLERY_POST_ID}`);
+  const photoChecks = page
+    .getByRole('radiogroup')
+    .locator('input[type="checkbox"]');
+  await photoChecks.first().check();
+
+  // When
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page.getByRole('button', { name: '선택 삭제' }).click();
+
+  // Then
+  await expect(page.getByText(/대표 이미지 저장 실패/)).toBeVisible();
+  await expect(page.getByRole('button', { name: '사진 추가' })).toBeEnabled();
+  await expect(page.getByRole('radiogroup').getByRole('radio')).toHaveCount(
+    post.attachments.length - 1,
+  );
+});

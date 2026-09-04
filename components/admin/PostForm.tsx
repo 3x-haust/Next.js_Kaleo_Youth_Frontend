@@ -152,7 +152,13 @@ export function PostForm({ post }: { post?: Post }) {
           : remainingUrls[0] ?? null;
       setThumbnailUrl(nextThumbnail);
       if (post && nextThumbnail !== post.thumbnailUrl) {
-        await clientPatch(`/posts/${post.id}`, { thumbnailUrl: nextThumbnail });
+        try {
+          await clientPatch(`/posts/${post.id}`, {
+            thumbnailUrl: nextThumbnail,
+          });
+        } catch (caught) {
+          firstFailure ??= `대표 이미지 저장 실패. ${errorMessage(caught)}`;
+        }
       }
       router.refresh();
     }
