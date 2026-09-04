@@ -8,22 +8,9 @@ import type { UploadedFile } from '@/lib/client-upload';
 import { fieldErrors, postSchema } from '@/lib/schemas';
 import type { Post } from '@/lib/types';
 import { clearAdminFlash, showAdminFlash } from '@/store/admin-flash';
-import {
-  Actions,
-  ErrorText,
-  Field,
-  FieldRow,
-  Form,
-  Input,
-  Label,
-  Textarea,
-} from './parts';
-import { DeleteButton, FileUploader, FormError } from './widgets';
-import { ExistingAttachments } from './ExistingAttachments';
-import {
-  GalleryThumbnailSelector,
-  type GalleryThumbnailCandidate,
-} from './GalleryThumbnailSelector';
+import { Actions, ErrorText, Field, FieldRow, Form, Input, Label, Textarea } from './parts';
+import { DeleteButton, FormError } from './widgets';
+import { GalleryPhotoManager } from './GalleryPhotoManager';
 
 export function PostForm({ post }: { post?: Post }) {
   const router = useRouter();
@@ -51,22 +38,6 @@ export function PostForm({ post }: { post?: Post }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [failure, setFailure] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
-
-  const thumbnailCandidates: GalleryThumbnailCandidate[] = [
-    ...persistedImages.map((attachment, index) => ({
-      id: attachment.id,
-      fileUrl: attachment.fileUrl,
-      name: attachment.originalName ?? `사진 ${index + 1}`,
-    })),
-    ...uploaded
-      .filter((file) => file.fileType?.startsWith('image/'))
-      .map((file, index) => ({
-      id: file.id,
-      fileUrl: file.fileUrl,
-      previewUrl: file.previewUrl,
-      name: file.originalName ?? `새 사진 ${index + 1}`,
-      })),
-  ];
 
   function changeUploaded(files: UploadedFile[]) {
     setUploaded(files);
@@ -211,38 +182,18 @@ export function PostForm({ post }: { post?: Post }) {
         {errors.content ? <ErrorText>{errors.content}</ErrorText> : null}
       </Field>
 
-      {post?.attachments && post.attachments.length > 0 ? (
-        <Field>
-          <Label>이미 올린 파일</Label>
-          <ExistingAttachments
-            attachments={post.attachments}
-            onRemove={removeExisting}
-          />
-        </Field>
-      ) : null}
-
       <Field>
-        <Label>사진 올리기</Label>
-        <FileUploader
-          ownerType="post"
-          files={uploaded}
-          onChange={changeUploaded}
-          accept="image/*"
-          label="사진 추가"
+        <Label>사진 올리기 · 대표 이미지</Label>
+        <GalleryPhotoManager
+          persisted={persistedImages}
+          uploaded={uploaded}
+          thumbnailUrl={thumbnailUrl}
+          onUploadedChange={changeUploaded}
+          onThumbnailChange={setThumbnailUrl}
+          onRemovePersisted={removeExisting}
         />
         {errors.files ? <ErrorText>{errors.files}</ErrorText> : null}
       </Field>
-
-      {thumbnailCandidates.length > 0 ? (
-        <Field>
-          <Label>대표 이미지</Label>
-          <GalleryThumbnailSelector
-            candidates={thumbnailCandidates}
-            value={thumbnailUrl}
-            onChange={setThumbnailUrl}
-          />
-        </Field>
-      ) : null}
 
       <Actions>
         <Button type="submit" disabled={pending}>

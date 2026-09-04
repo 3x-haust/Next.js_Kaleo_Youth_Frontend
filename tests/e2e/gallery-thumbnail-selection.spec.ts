@@ -198,3 +198,60 @@ test('gallery edit allows a persisted image to become the thumbnail without chan
   expect(payload.startDate).toBe('2023-12-30');
   expect(payload.endDate).toBe('2024-01-01');
 });
+
+test('new gallery bulk-deletes selected uploaded photos and keeps a valid thumbnail', async () => {
+  // Given
+  const files = Array.from({ length: 3 }, (_, index) => ({
+    name: `bulk-${index + 1}.png`,
+    mimeType: 'image/png',
+    buffer: PNG,
+  }));
+  const uploaded = files.map((file, index) => ({
+    id: `a0000000-0000-4000-8000-${String(index + 1).padStart(12, '0')}`,
+    fileUrl: `/images/gallery/design-detail-main.jpg?bulk=${index + 1}`,
+    originalName: file.name,
+    fileType: file.mimeType,
+    fileSize: '68',
+  }));
+  await page.route(`${API_ORIGIN}/api/uploads**`, async (route) => {
+    if (route.request().method() === 'DELETE') {
+      await route.fulfill({ status: 204, body: '' });
+      return;
+    }
+    const body = route.request().postDataBuffer()?.toString('latin1') ?? '';
+    const indexes = [
+      ...body.matchAll(/filename="bulk-(\d+)\.(?:png|webp)"/g),
+    ].map((match) => Number(match[1]) - 1);
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(indexes.map((index) => uploaded[index])),
+    });
+  });
+  await page.goto('/admin/gallery/new');
+  await page.locator('input[type="file"]').setInputFiles(files);
+
+  // When
+  const before = page.getByRole('radiogroup').getByRole('radio');
+  await expect(before).toHaveCount(3);
+  const deleteRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'DELETE' && request.url().startsWith(`${API_ORIGIN}/api/uploads/`)) {
+      deleteRequests.push(request.url().split('/').pop() ?? '');
+    }
+  });
+  await page.getByRole('checkbox', { name: 'bulk-1.png 선택' }).check();
+  await page.getByRole('checkbox', { name: 'bulk-3.png 선택' }).check();
+  await expect(page.getByText('2장 선택')).toBeVisible();
+  page.once('dialog', (dialog) => void dialog.accept());
+  await page.getByRole('button', { name: '선택 삭제' }).click();
+
+  // Then
+  await expect(page.getByRole('radiogroup').getByRole('radio')).toHaveCount(1);
+  await expect(page.getByRole('radiogroup').getByRole('radio').first()).toBeChecked();
+  await expect(page.getByText('2장의 사진을 삭제했습니다.')).toBeVisible();
+  expect(new Set(deleteRequests)).toEqual(
+    new Set([uploaded[0]?.id, uploaded[2]?.id]),
+  );
+  await expect(page.getByRole('checkbox', { name: 'bulk-2.png 선택' })).toBeVisible();
+});
