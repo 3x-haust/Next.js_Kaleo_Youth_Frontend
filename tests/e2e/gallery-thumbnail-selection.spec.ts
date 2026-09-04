@@ -198,7 +198,6 @@ test('gallery edit allows a persisted image to become the thumbnail without chan
   expect(payload.startDate).toBe('2023-12-30');
   expect(payload.endDate).toBe('2024-01-01');
 });
-
 test('new gallery bulk-deletes selected uploaded photos and keeps a valid thumbnail', async () => {
   // Given
   const files = Array.from({ length: 3 }, (_, index) => ({

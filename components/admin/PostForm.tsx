@@ -194,7 +194,6 @@ export function PostForm({ post }: { post?: Post }) {
         />
         {errors.files ? <ErrorText>{errors.files}</ErrorText> : null}
       </Field>
-
       <Actions>
         <Button type="submit" disabled={pending}>
           {pending ? '저장 중…' : isEdit ? '저장' : '갤러리 등록'}
